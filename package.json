@@ -1,0 +1,25 @@
+{
+  "name": "helix-health-portal",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Helix Health Portal — outpatient healthcare patient portal (QA automation course sample app)",
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "scripts": {
+    "dev": "concurrently --kill-others --names \"server,client\" --prefix-colors \"cyan,magenta\" \"npm run dev --workspace=server\" \"npm run dev --workspace=client\"",
+    "build": "npm run build --workspace=server && npm run build --workspace=client",
+    "test": "npm run test --workspace=server && npm run test --workspace=client",
+    "seed": "npx ts-node --project server/tsconfig.json db/seed.ts",
+    "db:reset": "rm -f db/helix.db && npm run seed",
+    "lint": "npm run lint --workspaces --if-present"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "typescript": "^5.4.5"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

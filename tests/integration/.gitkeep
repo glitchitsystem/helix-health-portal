@@ -1,0 +1,2 @@
+# Integration tests — students implement these during the course
+# Example: auth.integration.test.ts (supertest against the Express app)
