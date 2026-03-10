@@ -134,4 +134,184 @@ export type AuthEventType =
   | 'mfa_setup'
   | 'mfa_enabled'
   | 'mfa_validated'
-  | 'account_locked';
+  | 'account_locked'
+  | 'access_read'
+  | 'access_write'
+  | 'access_delete';
+
+// ─── Phase 2: Clinical Domain Models ─────────────────────────────────────────
+
+export interface AppointmentType {
+  id: number;
+  name: string;
+  duration_minutes: number;
+  color_hex: string;
+  is_telehealth: number;
+  is_active: number;
+}
+
+export interface Appointment {
+  id: number;
+  patient_id: number;
+  provider_id: number;
+  appointment_type_id: number;
+  status: string;
+  scheduled_at: string;
+  duration_minutes: number;
+  location: string | null;
+  telehealth_url: string | null;
+  notes: string | null;
+  cancel_reason: string | null;
+  created_by: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AppointmentReminder {
+  id: number;
+  appointment_id: number;
+  reminder_type: string;
+  scheduled_at: string;
+  sent_at: string | null;
+  status: string;
+}
+
+export interface Waitlist {
+  id: number;
+  patient_id: number;
+  provider_id: number | null;
+  appointment_type_id: number | null;
+  requested_at: string;
+  priority: number;
+  status: string;
+  notes: string | null;
+}
+
+export interface Diagnosis {
+  id: number;
+  patient_id: number;
+  icd10_code: string;
+  icd10_description: string;
+  status: string;
+  onset_date: string | null;
+  resolved_date: string | null;
+  severity: string | null;
+  notes: string | null;
+  created_by: number | null;
+  created_at: string;
+}
+
+export interface Medication {
+  id: number;
+  patient_id: number;
+  name: string;
+  dosage: string;
+  frequency: string;
+  route: string;
+  start_date: string;
+  end_date: string | null;
+  status: string;
+  prescriber_id: number | null;
+  notes: string | null;
+  created_by: number | null;
+  created_at: string;
+}
+
+export interface Allergy {
+  id: number;
+  patient_id: number;
+  allergen: string;
+  reaction_type: string;
+  severity: string;
+  onset_date: string | null;
+  status: string;
+  notes: string | null;
+  created_by: number | null;
+  created_at: string;
+}
+
+export interface Vitals {
+  id: number;
+  patient_id: number;
+  recorded_at: string;
+  bp_systolic: number | null;
+  bp_diastolic: number | null;
+  heart_rate: number | null;
+  temperature: number | null;
+  weight_kg: number | null;
+  height_cm: number | null;
+  o2_saturation: number | null;
+  recorded_by: number | null;
+}
+
+export interface LabResult {
+  id: number;
+  patient_id: number;
+  test_name: string;
+  test_code: string | null;
+  value: string;
+  unit: string | null;
+  reference_range_low: number | null;
+  reference_range_high: number | null;
+  status: string;
+  collected_at: string;
+  resulted_at: string | null;
+  ordered_by: number | null;
+  notes: string | null;
+}
+
+export interface ClinicalNote {
+  id: number;
+  patient_id: number;
+  provider_id: number;
+  appointment_id: number | null;
+  note_type: string;
+  subjective: string | null;
+  objective: string | null;
+  assessment: string | null;
+  plan: string | null;
+  is_locked: number;
+  locked_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface NoteAddendum {
+  id: number;
+  note_id: number;
+  author_id: number;
+  content: string;
+  created_at: string;
+}
+
+export interface NoteTemplate {
+  id: number;
+  name: string;
+  note_type: string;
+  subjective_template: string | null;
+  objective_template: string | null;
+  assessment_template: string | null;
+  plan_template: string | null;
+  created_by: number | null;
+  is_shared: number;
+}
+
+export interface Document {
+  id: number;
+  patient_id: number;
+  filename: string;
+  file_type: string;
+  file_size: number;
+  storage_path: string;
+  description: string | null;
+  uploaded_by: number | null;
+  created_at: string;
+}
+
+export interface DocumentAccessLog {
+  id: number;
+  document_id: number;
+  accessed_by: number;
+  accessed_at: string;
+  access_type: string;
+}

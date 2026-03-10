@@ -10,7 +10,11 @@ import rateLimit from 'express-rate-limit';
 
 import { requestLogger } from './middleware/requestLogger';
 import { errorHandler } from './middleware/errorHandler';
-import authRouter from './routes/auth';
+import authRouter          from './routes/auth';
+import appointmentsRouter  from './routes/appointments';
+import medicalRecordsRouter from './routes/medicalRecords';
+import clinicalNotesRouter  from './routes/clinicalNotes';
+import providersRouter      from './routes/providers';
 
 /**
  * Creates and configures the Express application.
@@ -66,7 +70,12 @@ export function createApp(): express.Application {
   });
 
   // ── Routes ───────────────────────────────────────────────────────────────
-  app.use('/api/auth', authLimiter, authRouter);
+  app.use('/api/auth',         authLimiter, authRouter);
+  app.use('/api/appointments',  appointmentsRouter);
+  app.use('/api/providers',     providersRouter);
+  app.use('/api/patients',      medicalRecordsRouter);
+  app.use('/api/documents',     medicalRecordsRouter);  // for /documents/doc/:id/download alias
+  app.use('/api',               clinicalNotesRouter);   // /notes/:id, /note-templates, /patients/:id/notes
 
   // ── 404 fallback ─────────────────────────────────────────────────────────
   app.use((_req, res) => {

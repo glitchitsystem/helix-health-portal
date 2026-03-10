@@ -36,6 +36,15 @@ db.pragma('foreign_keys = ON');
 const schema = fs.readFileSync(SCHEMA_PATH, 'utf-8');
 db.exec(schema);
 
+// Apply any migrations in db/migrations/ (idempotent — all use IF NOT EXISTS)
+const migsDir = path.resolve(__dirname, 'migrations');
+if (fs.existsSync(migsDir)) {
+  const migFiles = fs.readdirSync(migsDir).filter(f => f.endsWith('.sql')).sort();
+  for (const mf of migFiles) {
+    db.exec(fs.readFileSync(path.join(migsDir, mf), 'utf-8'));
+  }
+}
+
 // ─── Helper: upsert a user and return their id ────────────────────────────────
 
 async function upsertUser(
@@ -318,6 +327,7 @@ const seedAccounts = async () => {
 // ─── Run ─────────────────────────────────────────────────────────────────────
 
 seedAccounts()
+  .then(() => seedPhase2())
   .then(() => {
     console.log('\n✅  Seed complete!\n');
     db.close();
@@ -327,3 +337,235 @@ seedAccounts()
     db.close();
     process.exit(1);
   });
+
+// ─── Phase 2: Clinical Seed Data ─────────────────────────────────────────────
+
+function seedPhase2(): void {
+  console.log('\n  Seeding Phase 2 clinical data…');
+
+  // ── Helper: look up IDs ──────────────────────────────────────────────────
+  function userId(email: string): number {
+    return (db.prepare('SELECT id FROM users WHERE email = ?').get(email) as { id: number }).id;
+  }
+  function patientId(email: string): number {
+    const uid = userId(email);
+    return (db.prepare('SELECT id FROM patients WHERE user_id = ?').get(uid) as { id: number }).id;
+  }
+  function providerId(email: string): number {
+    const uid = userId(email);
+    return (db.prepare('SELECT id FROM providers WHERE user_id = ?').get(uid) as { id: number }).id;
+  }
+
+  const pid1 = patientId('patient1@helixhealthportal.test');
+  const pid2 = patientId('patient2@helixhealthportal.test');
+  const prov = providerId('provider@helixhealthportal.test');          // providers.id
+  const provUserId = userId('provider@helixhealthportal.test');        // users.id
+
+  // ── Appointment Types ───────────────────────────────────────────────────
+  console.log('\n    Seeding appointment types…');
+  const apptTypes: Array<{ name: string; duration: number; color: string; telehealth: number }> = [
+    { name: 'Annual Physical',     duration: 60, color: '#22c55e', telehealth: 0 },
+    { name: 'Follow-up',           duration: 30, color: '#6366f1', telehealth: 0 },
+    { name: 'Telehealth Consult',  duration: 30, color: '#3b82f6', telehealth: 1 },
+    { name: 'Urgent Care',         duration: 45, color: '#ef4444', telehealth: 0 },
+  ];
+  for (const t of apptTypes) {
+    db.prepare(`
+      INSERT INTO appointment_types (name, duration_minutes, color_hex, is_telehealth)
+      VALUES (?, ?, ?, ?)
+      ON CONFLICT(name) DO UPDATE
+        SET duration_minutes = excluded.duration_minutes,
+            color_hex = excluded.color_hex,
+            is_telehealth = excluded.is_telehealth
+    `).run(t.name, t.duration, t.color, t.telehealth);
+  }
+  const typeId = (name: string) =>
+    (db.prepare('SELECT id FROM appointment_types WHERE name = ?').get(name) as { id: number }).id;
+  console.log(`      ✔  ${apptTypes.length} appointment types`);
+
+  // ── Appointments ────────────────────────────────────────────────────────
+  console.log('\n    Seeding appointments…');
+  const now = new Date();
+  const daysAgo = (n: number) => new Date(now.getTime() - n * 86400_000).toISOString();
+  const daysAhead = (n: number) => new Date(now.getTime() + n * 86400_000).toISOString();
+
+  const appointments: Array<{
+    patient_id: number; provider_id: number; type: string;
+    scheduled_at: string; status: string; location?: string;
+  }> = [
+    // Patient 1 — past appointments
+    { patient_id: pid1, provider_id: prov, type: 'Annual Physical',    scheduled_at: daysAgo(90),  status: 'completed', location: 'Room 101' },
+    { patient_id: pid1, provider_id: prov, type: 'Follow-up',          scheduled_at: daysAgo(60),  status: 'completed', location: 'Room 101' },
+    { patient_id: pid1, provider_id: prov, type: 'Telehealth Consult', scheduled_at: daysAgo(30),  status: 'completed' },
+    { patient_id: pid1, provider_id: prov, type: 'Urgent Care',        scheduled_at: daysAgo(14),  status: 'cancelled', location: 'Room 102' },
+    // Patient 1 — upcoming
+    { patient_id: pid1, provider_id: prov, type: 'Follow-up',          scheduled_at: daysAhead(7), status: 'scheduled', location: 'Room 101' },
+    // Patient 2 — past appointments
+    { patient_id: pid2, provider_id: prov, type: 'Annual Physical',    scheduled_at: daysAgo(75),  status: 'completed', location: 'Room 103' },
+    { patient_id: pid2, provider_id: prov, type: 'Follow-up',          scheduled_at: daysAgo(45),  status: 'completed', location: 'Room 103' },
+    { patient_id: pid2, provider_id: prov, type: 'Telehealth Consult', scheduled_at: daysAgo(20),  status: 'no_show' },
+    // Patient 2 — upcoming
+    { patient_id: pid2, provider_id: prov, type: 'Telehealth Consult', scheduled_at: daysAhead(3), status: 'confirmed' },
+    { patient_id: pid2, provider_id: prov, type: 'Annual Physical',    scheduled_at: daysAhead(14), status: 'scheduled', location: 'Room 103' },
+  ];
+
+  const apptIds: number[] = [];
+  for (const a of appointments) {
+    const atId = typeId(a.type);
+    const existing = db.prepare(
+      'SELECT id FROM appointments WHERE patient_id = ? AND provider_id = ? AND scheduled_at = ?'
+    ).get(a.patient_id, a.provider_id, a.scheduled_at) as { id: number } | undefined;
+
+    if (existing) {
+      apptIds.push(existing.id);
+    } else {
+      const { lastInsertRowid } = db.prepare(`
+        INSERT INTO appointments
+          (patient_id, provider_id, appointment_type_id, scheduled_at, duration_minutes, status, location)
+        VALUES (?, ?, ?, ?, (SELECT duration_minutes FROM appointment_types WHERE id = ?), ?, ?)
+      `).run(a.patient_id, a.provider_id, atId, a.scheduled_at, atId, a.status, a.location ?? null);
+      apptIds.push(Number(lastInsertRowid));
+    }
+  }
+  console.log(`      ✔  ${appointments.length} appointments`);
+
+  // ── Per-patient clinical data ────────────────────────────────────────────
+  for (const [patEmail, pid] of [
+    ['patient1@helixhealthportal.test', pid1],
+    ['patient2@helixhealthportal.test', pid2],
+  ] as Array<[string, number]>) {
+    console.log(`\n    Seeding clinical data for ${patEmail}…`);
+
+    // Diagnoses
+    const diagnoses = [
+      { icd10_code: 'E11.9', icd10_description: 'Type 2 Diabetes Mellitus without complications', status: 'active', severity: 'moderate', onset_date: '2020-03-15' },
+      { icd10_code: 'I10',   icd10_description: 'Essential (Primary) Hypertension',                status: 'active', severity: 'mild',     onset_date: '2019-07-01' },
+      { icd10_code: 'E78.5', icd10_description: 'Hyperlipidemia, Unspecified',                     status: 'active', severity: 'mild',     onset_date: '2021-01-10' },
+    ];
+    for (const d of diagnoses) {
+      const ex = db.prepare('SELECT id FROM diagnoses WHERE patient_id = ? AND icd10_code = ?').get(pid, d.icd10_code);
+      if (!ex) {
+        db.prepare(`
+          INSERT INTO diagnoses (patient_id, icd10_code, icd10_description, status, severity, onset_date, created_by)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+        `).run(pid, d.icd10_code, d.icd10_description, d.status, d.severity, d.onset_date, provUserId);
+      }
+    }
+    console.log(`      ✔  3 diagnoses`);
+
+    // Medications
+    const meds = [
+      { name: 'Metformin',  dosage: '500 mg',  frequency: 'Twice daily',  route: 'oral', start_date: '2020-04-01' },
+      { name: 'Lisinopril', dosage: '10 mg',   frequency: 'Once daily',   route: 'oral', start_date: '2019-08-15' },
+    ];
+    for (const m of meds) {
+      const ex = db.prepare('SELECT id FROM medications WHERE patient_id = ? AND name = ?').get(pid, m.name);
+      if (!ex) {
+        db.prepare(`
+          INSERT INTO medications (patient_id, name, dosage, frequency, route, start_date, status, prescriber_id, created_by)
+          VALUES (?, ?, ?, ?, ?, ?, 'active', ?, ?)
+        `).run(pid, m.name, m.dosage, m.frequency, m.route, m.start_date, prov, provUserId);
+      }
+    }
+    console.log(`      ✔  2 medications`);
+
+    // Allergy
+    const alg = db.prepare('SELECT id FROM allergies WHERE patient_id = ? AND allergen = ?').get(pid, 'Penicillin');
+    if (!alg) {
+      db.prepare(`
+        INSERT INTO allergies (patient_id, allergen, reaction_type, severity, status, created_by)
+        VALUES (?, 'Penicillin', 'anaphylaxis', 'severe', 'active', ?)
+      `).run(pid, provUserId);
+    }
+    console.log(`      ✔  1 allergy`);
+
+    // Vitals — 5 monthly readings (5, 4, 3, 2, 1 months ago)
+    const today = new Date();
+    for (let mo = 5; mo >= 1; mo--) {
+      const dt = new Date(today);
+      dt.setMonth(dt.getMonth() - mo);
+      const recorded_at = dt.toISOString();
+      const ex = db.prepare('SELECT id FROM vitals WHERE patient_id = ? AND recorded_at = ?').get(pid, recorded_at);
+      if (!ex) {
+        db.prepare(`
+          INSERT INTO vitals
+            (patient_id, recorded_at, bp_systolic, bp_diastolic, heart_rate, temperature, weight_kg, o2_saturation, recorded_by)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(
+          pid, recorded_at,
+          120 + mo,         // systolic varies slightly
+          80 + mo,          // diastolic
+          72 + mo,          // heart rate
+          37.1,
+          82 - mo * 0.2,
+          98,
+          provUserId,       // vitals.recorded_by → users.id
+        );
+      }
+    }
+    console.log(`      ✔  5 vital readings`);
+
+    // Lab Results — 2 normal, 1 flagged
+    const labs: Array<{
+      test_name: string; value: string; unit: string;
+      ref_low: number | null; ref_high: number | null;
+      collected_at: string; status: string;
+    }> = [
+      { test_name: 'Complete Blood Count', value: '5.2',  unit: 'million/µL', ref_low: 4.5,  ref_high: 5.9, collected_at: daysAgo(30), status: 'final'        },
+      { test_name: 'Creatinine',           value: '0.98', unit: 'mg/dL',      ref_low: 0.7,  ref_high: 1.3, collected_at: daysAgo(30), status: 'final'        },
+      { test_name: 'HbA1c',               value: '7.8',  unit: '%',          ref_low: null, ref_high: 7.0, collected_at: daysAgo(30), status: 'flagged_high' },
+    ];
+    for (const l of labs) {
+      const ex = db.prepare('SELECT id FROM lab_results WHERE patient_id = ? AND test_name = ? AND collected_at = ?').get(pid, l.test_name, l.collected_at);
+      if (!ex) {
+        db.prepare(`
+          INSERT INTO lab_results
+            (patient_id, test_name, value, unit, reference_range_low, reference_range_high, collected_at, status, ordered_by)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(pid, l.test_name, l.value, l.unit, l.ref_low, l.ref_high, l.collected_at, l.status, prov);
+      }
+    }
+    console.log(`      ✔  3 lab results (1 flagged)`);
+
+    // Clinical Notes — 1 locked (>24h old), 1 editable (now)
+    const lockedAt  = daysAgo(2);
+    const editableAt = new Date().toISOString();
+
+    for (const [created_at, is_locked, subjective] of [
+      [lockedAt,   1, 'Patient reports fatigue and increased thirst. Routine follow-up for diabetes management.'],
+      [editableAt, 0, 'Patient here for blood pressure review and medication adjustment.'],
+    ] as Array<[string, number, string]>) {
+      const ex = db.prepare(
+        'SELECT id FROM clinical_notes WHERE patient_id = ? AND provider_id = ? AND subjective = ?'
+      ).get(pid, prov, subjective);
+      if (!ex) {
+        db.prepare(`
+          INSERT INTO clinical_notes
+            (patient_id, provider_id, note_type,
+             subjective, objective, assessment, plan, is_locked, created_at, updated_at)
+          VALUES (?, ?, 'progress', ?, ?, ?, ?, ?, ?, ?)
+        `).run(
+          pid, prov, subjective,
+          'BP 128/82 mmHg, HR 76 bpm, Weight 80 kg. HbA1c 7.8%.',
+          'Type 2 DM: suboptimal glycemic control. HTN: stable.',
+          'Increase Metformin to 1000 mg twice daily. Follow up in 4 weeks.',
+          is_locked, created_at, created_at,
+        );
+      }
+    }
+    console.log(`      ✔  2 clinical notes (1 locked)`);
+  }
+
+  // ── Waitlist entry for patient 2 ─────────────────────────────────────────
+  const ex = db.prepare('SELECT id FROM waitlist WHERE patient_id = ?').get(pid2);
+  if (!ex) {
+    const telehealthTypeId = typeId('Telehealth Consult');
+    db.prepare(`
+      INSERT INTO waitlist (patient_id, provider_id, appointment_type_id, notes, status)
+      VALUES (?, ?, ?, 'Flexible on timing', 'waiting')
+    `).run(pid2, prov, telehealthTypeId);
+    console.log(`\n    ✔  1 waitlist entry for patient2`);
+  }
+
+  console.log('\n  ✅  Phase 2 seed complete');
+}

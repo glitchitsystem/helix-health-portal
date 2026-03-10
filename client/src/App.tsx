@@ -21,7 +21,18 @@ import Unauthorized   from './pages/Unauthorized';
 import Dashboard from './pages/Dashboard';
 import MFASetup  from './pages/MFASetup';
 
-/** Placeholder for features not yet built (Phase 2+). */
+// Phase 2 — clinical pages
+import AppointmentBooking from './pages/AppointmentBooking';
+import AppointmentList    from './pages/AppointmentList';
+import AppointmentDetail  from './pages/AppointmentDetail';
+import MedicalRecords     from './pages/MedicalRecords';
+import NoteEditor         from './pages/NoteEditor';
+import NoteViewer         from './pages/NoteViewer';
+import PatientChart       from './pages/PatientChart';
+import ProviderSchedule   from './pages/ProviderSchedule';
+import DocumentVault      from './pages/DocumentVault';
+
+/** Placeholder for features not yet built. */
 const ComingSoon: React.FC<{ title: string }> = ({ title }) => (
   <div className="flex flex-col items-center justify-center py-20 text-center">
     <div className="mb-4 text-5xl">🚧</div>
@@ -48,11 +59,31 @@ const App: React.FC = () => (
             <Route path="/dashboard"    element={<Dashboard />} />
             <Route path="/mfa/setup"    element={<MFASetup />} />
             <Route path="/messages"     element={<ComingSoon title="Messages" />} />
-            <Route path="/appointments" element={<ComingSoon title="Appointments" />} />
 
-            {/* Patient-only */}
+            {/* ── Appointments (all authenticated) ──────────────────── */}
+            <Route path="/appointments"       element={<AppointmentList />} />
+            <Route path="/appointments/book"  element={<AppointmentBooking />} />
+            <Route path="/appointments/:id"   element={<AppointmentDetail />} />
+
+            {/* ── Clinical notes ─────────────────────────────────────── */}
+            <Route path="/notes/:noteId"      element={<NoteViewer />} />
+            <Route element={<ProtectedRoute allowedRoles={['provider', 'nurse', 'admin']} />}>
+              <Route path="/notes/:noteId/edit" element={<NoteEditor />} />
+            </Route>
+
+            {/* ── Patient-facing records / documents ─────────────────── */}
             <Route element={<ProtectedRoute allowedRoles={['patient']} />}>
-              <Route path="/records" element={<ComingSoon title="My Records" />} />
+              <Route path="/records"    element={<MedicalRecords />} />
+              <Route path="/documents"  element={<DocumentVault />} />
+            </Route>
+
+            {/* Provider / nurse / admin — patient-centric routes */}
+            <Route element={<ProtectedRoute allowedRoles={['provider', 'nurse', 'admin']} />}>
+              <Route path="/patients/:patientId/chart"     element={<PatientChart />} />
+              <Route path="/patients/:patientId/records"   element={<MedicalRecords />} />
+              <Route path="/patients/:patientId/notes/new" element={<NoteEditor />} />
+              <Route path="/patients/:patientId/documents" element={<DocumentVault />} />
+              <Route path="/schedule"                      element={<ProviderSchedule />} />
             </Route>
 
             {/* Provider / nurse / patient */}
