@@ -328,6 +328,7 @@ const seedAccounts = async () => {
 
 seedAccounts()
   .then(() => seedPhase2())
+  .then(() => seedPhase3())
   .then(() => {
     console.log('\n✅  Seed complete!\n');
     db.close();
@@ -568,4 +569,334 @@ function seedPhase2(): void {
   }
 
   console.log('\n  ✅  Phase 2 seed complete');
+}
+
+// ─── Phase 3: Prescriptions & Communications ─────────────────────────────────
+
+function seedPhase3(): void {
+  console.log('\n⚙️   Phase 3 seed — prescriptions & communications…');
+
+  // ── Resolve user / patient ids ─────────────────────────────────────────────
+  const u = (email: string): number =>
+    (db.prepare('SELECT id FROM users WHERE email = ?').get(email) as any)?.id;
+  const p = (userId: number): number =>
+    (db.prepare('SELECT id FROM patients WHERE user_id = ?').get(userId) as any)?.id;
+  const provId = (userId: number): number =>
+    (db.prepare('SELECT id FROM providers WHERE user_id = ?').get(userId) as any)?.id;
+
+  const provUserId  = u('provider@helixhealthportal.test');
+  const adminUserId = u('admin@helixhealthportal.test');
+  const pat1UserId  = u('patient1@helixhealthportal.test');
+  const pat2UserId  = u('patient2@helixhealthportal.test');
+  const pid1        = p(pat1UserId);
+  const pid2        = p(pat2UserId);
+  const providerId  = provId(provUserId);   // providers.id (FK for prescriptions)
+
+  if (!provUserId || !pid1 || !pid2 || !providerId) {
+    console.warn('  ⚠  Phase 3 seed skipped — prerequisite users not found.');
+    return;
+  }
+
+  const now = new Date().toISOString();
+  function daysAgo(n: number): string {
+    const d = new Date();
+    d.setDate(d.getDate() - n);
+    return d.toISOString();
+  }
+  function daysAhead(n: number): string {
+    const d = new Date();
+    d.setDate(d.getDate() + n);
+    return d.toISOString().split('T')[0];
+  }
+
+  // ── Prescriptions — 2 active per patient + 1 controlled ───────────────────
+  console.log('\n  💊  Prescriptions…');
+
+  const prescriptions: Array<{
+    patient_id: number; prescriber_id: number;
+    drug_name: string; drug_ndc: string | null;
+    dosage: string; frequency: string; route: string;
+    quantity: number; refills_remaining: number;
+    start_date: string; end_date: string | null;
+    status: string; is_controlled: number; schedule_class: string | null;
+    pharmacy_name: string | null; pharmacy_phone: string | null;
+    notes: string | null;
+  }> = [
+    // Patient 1 — Metformin
+    {
+      patient_id: pid1, prescriber_id: providerId,
+      drug_name: 'Metformin', drug_ndc: '0093-1048-01',
+      dosage: '1000mg', frequency: 'twice daily', route: 'oral',
+      quantity: 60, refills_remaining: 5,
+      start_date: daysAgo(90).split('T')[0], end_date: daysAhead(275),
+      status: 'active', is_controlled: 0, schedule_class: null,
+      pharmacy_name: 'TEST Pharmacy CVS #1234', pharmacy_phone: '555-000-0001',
+      notes: 'Take with food to reduce GI side effects.',
+    },
+    // Patient 1 — Lisinopril
+    {
+      patient_id: pid1, prescriber_id: providerId,
+      drug_name: 'Lisinopril', drug_ndc: '0093-1062-01',
+      dosage: '10mg', frequency: 'once daily', route: 'oral',
+      quantity: 30, refills_remaining: 3,
+      start_date: daysAgo(60).split('T')[0], end_date: daysAhead(305),
+      status: 'active', is_controlled: 0, schedule_class: null,
+      pharmacy_name: 'TEST Pharmacy CVS #1234', pharmacy_phone: '555-000-0001',
+      notes: null,
+    },
+    // Patient 1 — Codeine (controlled, Schedule III)
+    {
+      patient_id: pid1, prescriber_id: providerId,
+      drug_name: 'Codeine', drug_ndc: '0121-0766-08',
+      dosage: '30mg', frequency: 'every 6 hours as needed', route: 'oral',
+      quantity: 20, refills_remaining: 0,
+      start_date: daysAgo(5).split('T')[0], end_date: daysAhead(25),
+      status: 'active', is_controlled: 1, schedule_class: 'III',
+      pharmacy_name: 'TEST Pharmacy Walgreens #5678', pharmacy_phone: '555-000-0002',
+      notes: 'For post-procedure pain management. Do not exceed prescribed dose.',
+    },
+    // Patient 2 — Atorvastatin
+    {
+      patient_id: pid2, prescriber_id: providerId,
+      drug_name: 'Atorvastatin', drug_ndc: '0071-0155-23',
+      dosage: '20mg', frequency: 'once daily at bedtime', route: 'oral',
+      quantity: 30, refills_remaining: 6,
+      start_date: daysAgo(120).split('T')[0], end_date: daysAhead(245),
+      status: 'active', is_controlled: 0, schedule_class: null,
+      pharmacy_name: 'TEST Pharmacy Rite Aid #9012', pharmacy_phone: '555-000-0003',
+      notes: null,
+    },
+    // Patient 2 — Omeprazole
+    {
+      patient_id: pid2, prescriber_id: providerId,
+      drug_name: 'Omeprazole', drug_ndc: '0093-5154-98',
+      dosage: '20mg', frequency: 'once daily before breakfast', route: 'oral',
+      quantity: 30, refills_remaining: 2,
+      start_date: daysAgo(45).split('T')[0], end_date: daysAhead(320),
+      status: 'active', is_controlled: 0, schedule_class: null,
+      pharmacy_name: 'TEST Pharmacy Rite Aid #9012', pharmacy_phone: '555-000-0003',
+      notes: null,
+    },
+  ];
+
+  const rxIds: number[] = [];
+  for (const rx of prescriptions) {
+    const ex = db.prepare(
+      'SELECT id FROM prescriptions WHERE patient_id = ? AND drug_name = ? AND start_date = ?',
+    ).get(rx.patient_id, rx.drug_name, rx.start_date);
+    if (!ex) {
+      const result = db.prepare(`
+        INSERT INTO prescriptions
+          (patient_id, prescriber_id, drug_name, drug_ndc, dosage, frequency,
+           route, quantity, refills_remaining, start_date, end_date, status,
+           is_controlled, schedule_class, pharmacy_name, pharmacy_phone, notes)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        rx.patient_id, rx.prescriber_id, rx.drug_name, rx.drug_ndc,
+        rx.dosage, rx.frequency, rx.route, rx.quantity, rx.refills_remaining,
+        rx.start_date, rx.end_date, rx.status, rx.is_controlled,
+        rx.schedule_class, rx.pharmacy_name, rx.pharmacy_phone, rx.notes,
+      );
+      rxIds.push(result.lastInsertRowid as number);
+    } else {
+      rxIds.push((ex as any).id);
+    }
+  }
+  console.log(`      ✔  ${prescriptions.length} prescriptions (1 controlled, Schedule III)`);
+
+  // ── Drug interaction pre-seeded log entry: Warfarin ↔ Aspirin ────────────
+  const existingInteraction = db.prepare(
+    'SELECT id FROM drug_interactions_log WHERE patient_id = ? AND drug_a = ? AND drug_b = ?',
+  ).get(pid1, 'Warfarin', 'Aspirin');
+  if (!existingInteraction) {
+    db.prepare(`
+      INSERT INTO drug_interactions_log
+        (patient_id, drug_a, drug_b, severity, description, checked_by, checked_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      pid1, 'Warfarin', 'Aspirin', 'severe',
+      'Concurrent use significantly increases risk of major bleeding.',
+      provUserId, daysAgo(10),
+    );
+    console.log('      ✔  1 drug interaction log entry (Warfarin ↔ Aspirin, severe)');
+  }
+
+  // ── Message Threads ───────────────────────────────────────────────────────
+  console.log('\n  ✉️   Message threads…');
+
+  function createThread(
+    subject: string, createdBy: number, participantIds: number[],
+    firstMessage: string, createdAt: string,
+  ): number {
+    const ex = db.prepare(
+      'SELECT id FROM message_threads WHERE subject = ? AND created_by = ?',
+    ).get(subject, createdBy);
+    if (ex) return (ex as any).id;
+
+    const threadResult = db.prepare(`
+      INSERT INTO message_threads (subject, created_by, created_at, updated_at)
+      VALUES (?, ?, ?, ?)
+    `).run(subject, createdBy, createdAt, createdAt);
+    const threadId = threadResult.lastInsertRowid as number;
+
+    // Add all participants (including creator)
+    const allParticipants = [...new Set([createdBy, ...participantIds])];
+    for (const uid of allParticipants) {
+      db.prepare(`
+        INSERT OR IGNORE INTO message_thread_participants (thread_id, user_id)
+        VALUES (?, ?)
+      `).run(threadId, uid);
+    }
+
+    // Insert the first message
+    db.prepare(`
+      INSERT INTO messages (thread_id, sender_id, body, created_at)
+      VALUES (?, ?, ?, ?)
+    `).run(threadId, createdBy, firstMessage, createdAt);
+
+    return threadId;
+  }
+
+  // Thread 1: patient1 → provider — HbA1c question
+  createThread(
+    'Question about my HbA1c results',
+    pat1UserId,
+    [provUserId],
+    'Hello Dr., I received my latest HbA1c results showing 7.8%. I\'m a bit worried — could we discuss what steps I should take to bring this down? I\'ve been trying to follow the diet recommendations but finding it difficult.',
+    daysAgo(5),
+  );
+
+  // Thread 2: patient2 → provider — medication side effects
+  createThread(
+    'Medication side effects',
+    pat2UserId,
+    [provUserId],
+    'Hi, I started the Atorvastatin last month and I\'ve been experiencing some muscle soreness, especially in my legs. Is this a normal side effect? Should I be concerned? The soreness is making it hard to exercise.',
+    daysAgo(3),
+  );
+
+  // Thread 3: admin broadcast — system maintenance
+  createThread(
+    'System maintenance notice',
+    adminUserId,
+    [provUserId, pat1UserId, pat2UserId],
+    'Dear Helix Health Portal users, we will be performing scheduled system maintenance this Sunday from 2:00 AM to 4:00 AM EST. During this window the portal will be unavailable. We apologize for any inconvenience. Please save any work in progress before this time.',
+    daysAgo(1),
+  );
+
+  console.log('      ✔  3 message threads created');
+
+  // ── Notifications — 5 per major user ──────────────────────────────────────
+  console.log('\n  🔔  Notifications…');
+
+  function insertNotification(
+    userId: number, type: string, title: string, body: string,
+    dataJson: string | null, isRead: number, createdAt: string,
+  ) {
+    const ex = db.prepare(
+      'SELECT id FROM notifications WHERE user_id = ? AND type = ? AND title = ? AND created_at = ?',
+    ).get(userId, type, title, createdAt);
+    if (!ex) {
+      db.prepare(`
+        INSERT INTO notifications (user_id, type, title, body, data_json, is_read, read_at, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        userId, type, title, body, dataJson, isRead,
+        isRead ? createdAt : null,
+        createdAt,
+      );
+    }
+  }
+
+  // Patient 1 notifications
+  insertNotification(pat1UserId, 'appointment_reminder',
+    'Appointment Tomorrow',
+    'You have an appointment scheduled for tomorrow at 10:00 AM with your care team.',
+    JSON.stringify({ appointment_id: 1 }), 0, daysAgo(1));
+  insertNotification(pat1UserId, 'lab_result',
+    'Lab Results Available',
+    'Your HbA1c and Complete Blood Count results are now available.',
+    JSON.stringify({ lab_result_id: 1 }), 1, daysAgo(5));
+  insertNotification(pat1UserId, 'new_message',
+    'New Message from Provider',
+    'You have received a reply to your question about HbA1c results.',
+    JSON.stringify({ thread_id: 1 }), 0, daysAgo(4));
+  insertNotification(pat1UserId, 'refill_approved',
+    'Refill Request Approved',
+    'Your refill request for Metformin has been approved by your provider.',
+    JSON.stringify({ prescription_id: rxIds[0] ?? 1 }), 1, daysAgo(10));
+  insertNotification(pat1UserId, 'appointment_cancelled',
+    'Appointment Cancelled',
+    'Your appointment scheduled for last Tuesday has been cancelled. Please reschedule at your convenience.',
+    JSON.stringify({ appointment_id: 2 }), 0, daysAgo(8));
+
+  // Patient 2 notifications
+  insertNotification(pat2UserId, 'appointment_reminder',
+    'Appointment Reminder',
+    'Reminder: you have a Telehealth Consult scheduled in 24 hours.',
+    JSON.stringify({ appointment_id: 3 }), 0, daysAgo(1));
+  insertNotification(pat2UserId, 'new_message',
+    'New Message from Provider',
+    'Your provider has replied regarding your medication side effects.',
+    JSON.stringify({ thread_id: 2 }), 0, daysAgo(2));
+  insertNotification(pat2UserId, 'lab_result',
+    'Lab Results Ready',
+    'Your latest lab panel results are now available for review.',
+    JSON.stringify({ lab_result_id: 2 }), 1, daysAgo(7));
+  insertNotification(pat2UserId, 'refill_denied',
+    'Refill Request Denied',
+    'Your refill request has been reviewed. Please contact your care team for more information.',
+    JSON.stringify({ prescription_id: rxIds[3] ?? 2 }), 1, daysAgo(14));
+  insertNotification(pat2UserId, 'appointment_rescheduled',
+    'Appointment Rescheduled',
+    'Your upcoming appointment has been moved to next week. Check appointments for details.',
+    JSON.stringify({ appointment_id: 4 }), 0, daysAgo(3));
+
+  // Provider notifications
+  insertNotification(provUserId, 'new_message',
+    'New Message from Patient',
+    'TEST Patient One has sent you a message regarding HbA1c results.',
+    JSON.stringify({ thread_id: 1 }), 1, daysAgo(5));
+  insertNotification(provUserId, 'new_message',
+    'New Message from Patient',
+    'TEST Patient Two has sent you a message regarding medication side effects.',
+    JSON.stringify({ thread_id: 2 }), 0, daysAgo(3));
+  insertNotification(provUserId, 'appointment_reminder',
+    'Upcoming Appointments',
+    'You have 3 patient appointments scheduled for tomorrow.',
+    null, 1, daysAgo(1));
+  insertNotification(provUserId, 'lab_result',
+    'Lab Results Flagged',
+    'A flagged lab result for patient TEST_Patient One requires your review.',
+    JSON.stringify({ lab_result_id: 1 }), 0, daysAgo(5));
+  insertNotification(provUserId, 'refill_approved',
+    'Refill Processed',
+    'A refill request for Metformin (TEST Patient One) has been successfully processed.',
+    JSON.stringify({ prescription_id: rxIds[0] ?? 1 }), 1, daysAgo(10));
+
+  // Admin notifications
+  insertNotification(adminUserId, 'new_message',
+    'System Broadcast Sent',
+    'Your maintenance notice has been delivered to all active users.',
+    JSON.stringify({ thread_id: 3 }), 1, daysAgo(1));
+  insertNotification(adminUserId, 'appointment_cancelled',
+    'Appointment Cancellation Alert',
+    'A patient appointment was cancelled with short notice. Review scheduling queue.',
+    null, 0, daysAgo(8));
+  insertNotification(adminUserId, 'lab_result',
+    'Critical Lab Alert',
+    'A critical lab result has been flagged for immediate provider review.',
+    JSON.stringify({ lab_result_id: 1 }), 1, daysAgo(5));
+  insertNotification(adminUserId, 'refill_denied',
+    'Refill Denial Logged',
+    'A controlled substance refill request was denied. Audit log updated.',
+    JSON.stringify({ prescription_id: rxIds[2] ?? 3 }), 0, daysAgo(3));
+  insertNotification(adminUserId, 'appointment_reminder',
+    'Staff Schedule Reminder',
+    'Monthly care team schedule review is due by end of week.',
+    null, 0, daysAgo(2));
+
+  console.log('      ✔  5 notifications each for patient1, patient2, provider, admin');
+
+  console.log('\n  ✅  Phase 3 seed complete');
 }

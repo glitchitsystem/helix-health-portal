@@ -32,6 +32,15 @@ import PatientChart       from './pages/PatientChart';
 import ProviderSchedule   from './pages/ProviderSchedule';
 import DocumentVault      from './pages/DocumentVault';
 
+// Phase 3 — prescriptions & communications
+import PrescriptionList        from './pages/PrescriptionList';
+import PrescriptionManager     from './pages/PrescriptionManager';
+import MessageInbox            from './pages/MessageInbox';
+import MessageThreadPage       from './pages/MessageThread';
+import NewMessage              from './pages/NewMessage';
+import NotificationCenter      from './pages/NotificationCenter';
+import NotificationPreferences from './pages/NotificationPreferences';
+
 /** Placeholder for features not yet built. */
 const ComingSoon: React.FC<{ title: string }> = ({ title }) => (
   <div className="flex flex-col items-center justify-center py-20 text-center">
@@ -58,7 +67,15 @@ const App: React.FC = () => (
           <Route element={<Layout />}>
             <Route path="/dashboard"    element={<Dashboard />} />
             <Route path="/mfa/setup"    element={<MFASetup />} />
-            <Route path="/messages"     element={<ComingSoon title="Messages" />} />
+
+            {/* ── Messaging (all authenticated) ─────────────────────── */}
+            <Route path="/messages"             element={<MessageInbox />} />
+            <Route path="/messages/new"         element={<NewMessage />} />
+            <Route path="/messages/threads/:id" element={<MessageThreadPage />} />
+
+            {/* ── Notifications (all authenticated) ─────────────────── */}
+            <Route path="/notifications"              element={<NotificationCenter />} />
+            <Route path="/notifications/preferences"  element={<NotificationPreferences />} />
 
             {/* ── Appointments (all authenticated) ──────────────────── */}
             <Route path="/appointments"       element={<AppointmentList />} />
@@ -71,10 +88,11 @@ const App: React.FC = () => (
               <Route path="/notes/:noteId/edit" element={<NoteEditor />} />
             </Route>
 
-            {/* ── Patient-facing records / documents ─────────────────── */}
+            {/* ── Patient-facing records / documents / prescriptions ──── */}
             <Route element={<ProtectedRoute allowedRoles={['patient']} />}>
-              <Route path="/records"    element={<MedicalRecords />} />
-              <Route path="/documents"  element={<DocumentVault />} />
+              <Route path="/records"        element={<MedicalRecords />} />
+              <Route path="/documents"      element={<DocumentVault />} />
+              <Route path="/prescriptions"  element={<PrescriptionList />} />
             </Route>
 
             {/* Provider / nurse / admin — patient-centric routes */}
@@ -84,6 +102,7 @@ const App: React.FC = () => (
               <Route path="/patients/:patientId/notes/new" element={<NoteEditor />} />
               <Route path="/patients/:patientId/documents" element={<DocumentVault />} />
               <Route path="/schedule"                      element={<ProviderSchedule />} />
+              <Route path="/prescriptions/manage"          element={<PrescriptionManager />} />
             </Route>
 
             {/* Provider / nurse / patient */}

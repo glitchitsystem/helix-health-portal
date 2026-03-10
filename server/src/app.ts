@@ -15,6 +15,9 @@ import appointmentsRouter  from './routes/appointments';
 import medicalRecordsRouter from './routes/medicalRecords';
 import clinicalNotesRouter  from './routes/clinicalNotes';
 import providersRouter      from './routes/providers';
+import prescriptionsRouter  from './routes/prescriptions';
+import messagesRouter       from './routes/messages';
+import notificationsRouter  from './routes/notifications';
 
 /**
  * Creates and configures the Express application.
@@ -76,6 +79,10 @@ export function createApp(): express.Application {
   app.use('/api/patients',      medicalRecordsRouter);
   app.use('/api/documents',     medicalRecordsRouter);  // for /documents/doc/:id/download alias
   app.use('/api',               clinicalNotesRouter);   // /notes/:id, /note-templates, /patients/:id/notes
+  app.use('/api/patients',      prescriptionsRouter);   // /patients/:id/prescriptions
+  app.use('/api/prescriptions', prescriptionsRouter);   // /prescriptions/:id, /refill-requests
+  app.use('/api/messages',      messagesRouter);
+  app.use('/api/notifications', notificationsRouter);
 
   // ── 404 fallback ─────────────────────────────────────────────────────────
   app.use((_req, res) => {

@@ -15,17 +15,20 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { label: 'Dashboard',    to: '/dashboard',    roles: [],                                    icon: '🏠' },
-  { label: 'My Records',   to: '/records',      roles: ['patient'],                           icon: '📋' },
-  { label: 'Documents',    to: '/documents',    roles: ['patient'],                           icon: '📁' },
-  { label: 'Appointments', to: '/appointments', roles: ['patient', 'provider', 'nurse'],      icon: '📅' },
-  { label: 'Schedule',     to: '/schedule',     roles: ['provider', 'nurse'],                 icon: '📆' },
-  { label: 'Patients',     to: '/patients',     roles: ['admin', 'provider', 'nurse'],        icon: '👥' },
-  { label: 'Lab Results',  to: '/labs',         roles: ['patient', 'provider', 'nurse'],      icon: '🔬' },
-  { label: 'Billing',      to: '/billing',      roles: ['patient', 'billing', 'admin'],       icon: '💳' },
-  { label: 'Messages',     to: '/messages',     roles: [],                                    icon: '✉️' },
-  { label: 'MFA Setup',    to: '/mfa/setup',    roles: [],                                    icon: '🔐' },
-  { label: 'Admin',        to: '/admin',        roles: ['admin'],                             icon: '⚙️' },
+  { label: 'Dashboard',     to: '/dashboard',             roles: [],                                    icon: '🏠' },
+  { label: 'My Records',    to: '/records',               roles: ['patient'],                           icon: '📋' },
+  { label: 'Documents',     to: '/documents',             roles: ['patient'],                           icon: '📁' },
+  { label: 'Prescriptions', to: '/prescriptions',         roles: ['patient'],                           icon: '💊' },
+  { label: 'Appointments',  to: '/appointments',          roles: ['patient', 'provider', 'nurse'],      icon: '📅' },
+  { label: 'Schedule',      to: '/schedule',              roles: ['provider', 'nurse'],                 icon: '📆' },
+  { label: 'Rx Manager',    to: '/prescriptions/manage',  roles: ['provider', 'nurse', 'admin'],        icon: '📋' },
+  { label: 'Patients',      to: '/patients',              roles: ['admin', 'provider', 'nurse'],        icon: '👥' },
+  { label: 'Lab Results',   to: '/labs',                  roles: ['patient', 'provider', 'nurse'],      icon: '🔬' },
+  { label: 'Messages',      to: '/messages',              roles: [],                                    icon: '✉️' },
+  { label: 'Notifications', to: '/notifications',         roles: [],                                    icon: '🔔' },
+  { label: 'Billing',       to: '/billing',               roles: ['patient', 'billing', 'admin'],       icon: '💳' },
+  { label: 'MFA Setup',     to: '/mfa/setup',             roles: [],                                    icon: '🔐' },
+  { label: 'Admin',         to: '/admin',                 roles: ['admin'],                             icon: '⚙️' },
 ];
 
 /**

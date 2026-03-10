@@ -226,3 +226,100 @@ export interface HealthSummary {
   recent_labs: LabResult[];
   active_allergies: Allergy[];
 }
+
+// ─── Phase 3: Prescriptions & Communications ──────────────────────────────────
+
+export interface Prescription {
+  id: number;
+  patient_id: number;
+  prescriber_id: number;
+  drug_name: string;
+  drug_ndc: string | null;
+  dosage: string;
+  frequency: string;
+  route: string;
+  quantity: number;
+  refills_remaining: number;
+  start_date: string;
+  end_date: string | null;
+  status: string;
+  is_controlled: number;
+  schedule_class: string | null;
+  pharmacy_name: string | null;
+  pharmacy_phone: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+  // joined fields
+  prescriber_email?: string;
+}
+
+export interface DrugInteraction {
+  drug_a: string;
+  drug_b: string;
+  severity: 'mild' | 'moderate' | 'severe';
+  description: string;
+}
+
+export interface RefillRequest {
+  id: number;
+  prescription_id: number;
+  patient_id: number;
+  requested_at: string;
+  status: string;
+  pharmacy_notes: string | null;
+  reviewed_by: number | null;
+  reviewed_at: string | null;
+  notes: string | null;
+  // joined
+  drug_name?: string;
+  patient_name?: string;
+}
+
+export interface MessageThread {
+  id: number;
+  subject: string;
+  created_by: number;
+  created_at: string;
+  updated_at: string;
+  is_archived: number;
+  // computed
+  unread_count?: number;
+  last_message?: string;
+  participants?: ThreadParticipant[];
+}
+
+export interface ThreadParticipant {
+  user_id: number;
+  email: string;
+  last_read_at: string | null;
+}
+
+export interface Message {
+  id: number;
+  thread_id: number;
+  sender_id: number;
+  sender_email?: string;
+  body: string;
+  is_priority: number;
+  created_at: string;
+}
+
+export interface AppNotification {
+  id: number;
+  user_id: number;
+  type: string;
+  title: string;
+  body: string;
+  data_json: string | null;
+  is_read: number;
+  read_at: string | null;
+  created_at: string;
+}
+
+export interface NotificationPreference {
+  notification_type: string;
+  in_app_enabled: number;
+  email_enabled: number;
+  sms_enabled: number;
+}

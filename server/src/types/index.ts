@@ -315,3 +315,96 @@ export interface DocumentAccessLog {
   accessed_at: string;
   access_type: string;
 }
+
+// ─── Phase 3: Prescriptions & Communications ──────────────────────────────────
+
+export interface Prescription {
+  id: number;
+  patient_id: number;
+  prescriber_id: number;
+  drug_name: string;
+  drug_ndc: string | null;
+  dosage: string;
+  frequency: string;
+  route: string;
+  quantity: number;
+  refills_remaining: number;
+  start_date: string;
+  end_date: string | null;
+  status: string;
+  is_controlled: number;
+  schedule_class: string | null;
+  pharmacy_name: string | null;
+  pharmacy_phone: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DrugInteractionLog {
+  id: number;
+  patient_id: number;
+  drug_a: string;
+  drug_b: string;
+  severity: string;
+  description: string;
+  checked_at: string;
+  checked_by: number | null;
+}
+
+export interface RefillRequest {
+  id: number;
+  prescription_id: number;
+  patient_id: number;
+  requested_at: string;
+  status: string;
+  pharmacy_notes: string | null;
+  reviewed_by: number | null;
+  reviewed_at: string | null;
+  notes: string | null;
+}
+
+export interface MessageThread {
+  id: number;
+  subject: string;
+  created_by: number;
+  created_at: string;
+  updated_at: string;
+  is_archived: number;
+}
+
+export interface MessageThreadParticipant {
+  thread_id: number;
+  user_id: number;
+  joined_at: string;
+  last_read_at: string | null;
+}
+
+export interface Message {
+  id: number;
+  thread_id: number;
+  sender_id: number;
+  body: string;
+  is_priority: number;
+  created_at: string;
+}
+
+export interface Notification {
+  id: number;
+  user_id: number;
+  type: string;
+  title: string;
+  body: string;
+  data_json: string | null;
+  is_read: number;
+  read_at: string | null;
+  created_at: string;
+}
+
+export interface NotificationPreference {
+  user_id: number;
+  notification_type: string;
+  in_app_enabled: number;
+  email_enabled: number;
+  sms_enabled: number;
+}
