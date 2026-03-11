@@ -408,3 +408,82 @@ export interface NotificationPreference {
   email_enabled: number;
   sms_enabled: number;
 }
+
+// ─── Phase 4: Billing, Insurance & Search ──────────────────────────────────
+
+export interface InsurancePlan {
+  id: number;
+  patient_id: number;
+  insurer_name: string;
+  plan_name: string;
+  member_id: string;
+  group_number: string | null;
+  effective_date: string;
+  expiration_date: string | null;
+  is_primary: number;
+  copay_amount: number;
+  deductible_amount: number;
+  deductible_met: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Invoice {
+  id: number;
+  patient_id: number;
+  appointment_id: number | null;
+  status: string;
+  total_amount: number;
+  insurance_amount: number;
+  patient_amount: number;
+  due_date: string;
+  paid_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface InvoiceItem {
+  id: number;
+  invoice_id: number;
+  cpt_code: string;
+  description: string;
+  quantity: number;
+  unit_price: number;
+  insurance_adjustment: number;
+  patient_responsibility: number;
+}
+
+export interface Payment {
+  id: number;
+  invoice_id: number;
+  patient_id: number;
+  amount: number;
+  payment_method: string;
+  stripe_payment_intent_id: string | null;
+  status: string;
+  paid_at: string;
+  notes: string | null;
+}
+
+export interface PaymentPlan {
+  id: number;
+  invoice_id: number;
+  patient_id: number;
+  installment_amount: number;
+  installments_total: number;
+  installments_paid: number;
+  next_due_date: string;
+  status: string;
+  created_at: string;
+}
+
+export interface BillingDispute {
+  id: number;
+  invoice_id: number;
+  patient_id: number;
+  reason: string;
+  status: string;
+  submitted_at: string;
+  resolved_at: string | null;
+  resolution_notes: string | null;
+}

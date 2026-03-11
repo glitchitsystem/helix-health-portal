@@ -26,9 +26,15 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Lab Results',   to: '/labs',                  roles: ['patient', 'provider', 'nurse'],      icon: '🔬' },
   { label: 'Messages',      to: '/messages',              roles: [],                                    icon: '✉️' },
   { label: 'Notifications', to: '/notifications',         roles: [],                                    icon: '🔔' },
-  { label: 'Billing',       to: '/billing',               roles: ['patient', 'billing', 'admin'],       icon: '💳' },
-  { label: 'MFA Setup',     to: '/mfa/setup',             roles: [],                                    icon: '🔐' },
-  { label: 'Admin',         to: '/admin',                 roles: ['admin'],                             icon: '⚙️' },
+  { label: 'Billing',       to: '/billing',               roles: ['patient', 'billing', 'admin'],        icon: '💳' },
+  { label: 'Workqueue',     to: '/billing/workqueue',     roles: ['billing', 'admin'],                   icon: '📋' },
+  { label: 'Search',        to: '/search',               roles: [],                                     icon: '🔍' },
+  { label: 'Reports',       to: '/admin/reports',        roles: ['admin'],                              icon: '📊' },
+  { label: 'Users',         to: '/admin/users',          roles: ['admin'],                              icon: '👤' },
+  { label: 'Audit Log',     to: '/admin/audit-log',      roles: ['admin'],                              icon: '📜' },
+  { label: 'System',        to: '/admin/system-health',  roles: ['admin'],                              icon: '🖥️' },
+  { label: 'MFA Setup',     to: '/mfa/setup',            roles: [],                                     icon: '🔐' },
+  { label: 'Admin',         to: '/admin',                roles: ['admin'],                              icon: '⚙️' },
 ];
 
 /**

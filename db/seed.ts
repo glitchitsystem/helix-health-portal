@@ -329,6 +329,7 @@ const seedAccounts = async () => {
 seedAccounts()
   .then(() => seedPhase2())
   .then(() => seedPhase3())
+  .then(() => seedPhase4())
   .then(() => {
     console.log('\n✅  Seed complete!\n');
     db.close();
@@ -899,4 +900,163 @@ function seedPhase3(): void {
   console.log('      ✔  5 notifications each for patient1, patient2, provider, admin');
 
   console.log('\n  ✅  Phase 3 seed complete');
+}
+
+// ─── Phase 4: Billing Seed Data ───────────────────────────────────────────────
+
+function seedPhase4(): void {
+  console.log('\n  Seeding Phase 4 billing data…');
+
+  function userId(email: string): number {
+    return (db.prepare('SELECT id FROM users WHERE email = ?').get(email) as { id: number }).id;
+  }
+  function patientId(email: string): number {
+    const uid = userId(email);
+    return (db.prepare('SELECT id FROM patients WHERE user_id = ?').get(uid) as { id: number }).id;
+  }
+
+  const pid1 = patientId('patient1@helixhealthportal.test');
+  const pid2 = patientId('patient2@helixhealthportal.test');
+
+  // ── Helpers ─────────────────────────────────────────────────────────────
+  function daysAgo(n: number): string {
+    const d = new Date();
+    d.setDate(d.getDate() - n);
+    return d.toISOString();
+  }
+  function daysFromNow(n: number): string {
+    const d = new Date();
+    d.setDate(d.getDate() + n);
+    return d.toISOString().slice(0, 10);
+  }
+
+  // ── Insurance Plans ──────────────────────────────────────────────────────
+  console.log('\n    Seeding insurance plans…');
+
+  const insStmt = db.prepare(`
+    INSERT INTO insurance_plans
+      (patient_id, insurer_name, plan_name, member_id, group_number,
+       effective_date, expiration_date, copay_amount, deductible_amount,
+       deductible_met, is_primary)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+
+  // Patient 1 — primary + secondary
+  insStmt.run(pid1, 'BlueShield', 'Gold PPO', 'MBR-TEST-00111', 'GRP-TEST-500',
+    '2024-01-01', '2024-12-31', 20, 1000, 400, 1);
+  insStmt.run(pid1, 'Medicaid', 'Supplemental Plan', 'MBR-TEST-00112', null,
+    '2024-01-01', null, 0, 0, 0, 0);
+
+  // Patient 2 — primary + secondary
+  insStmt.run(pid2, 'UnitedHealth', 'Silver HMO', 'MBR-TEST-00211', 'GRP-TEST-600',
+    '2024-01-01', '2024-12-31', 30, 2000, 0, 1);
+  insStmt.run(pid2, 'Aetna', 'Bronze HSA', 'MBR-TEST-00212', 'GRP-TEST-601',
+    '2024-01-01', '2024-12-31', 50, 3000, 0, 0);
+
+  console.log('      ✔  2 insurance plans each for patient1, patient2');
+
+  // ── CPT line items template ───────────────────────────────────────────────
+  const CPT_ITEMS = [
+    { cpt_code: '99213', description: 'Office visit – established patient',  unit_price: 150.00, ins_adj: 70.00 },
+    { cpt_code: '99000', description: 'Handling fee',                        unit_price:  25.00, ins_adj:  5.00 },
+    { cpt_code: '80050', description: 'General health panel',                unit_price: 200.00, ins_adj: 120.00 },
+    { cpt_code: '85025', description: 'Complete blood count (CBC)',           unit_price:  85.00, ins_adj:  45.00 },
+    { cpt_code: '82947', description: 'Glucose, blood test',                 unit_price:  40.00, ins_adj:  20.00 },
+  ];
+
+  function insertInvoiceWithItems(
+    patId: number,
+    status: 'paid' | 'pending' | 'overdue',
+    dueDate: string,
+    paidAt: string | null,
+  ): number {
+    const totalAmount  = CPT_ITEMS.reduce((s, i) => s + i.unit_price, 0);     // 500.00
+    const insAmount    = CPT_ITEMS.reduce((s, i) => s + i.ins_adj, 0);        // 260.00
+    const patientAmount = totalAmount - insAmount;                             // 240.00
+
+    const inv = db.prepare(`
+      INSERT INTO invoices
+        (patient_id, invoice_date, due_date, total_amount, insurance_amount,
+         patient_amount, status, paid_at)
+      VALUES (?, date('now','-30 days'), ?, ?, ?, ?, ?, ?)
+    `).run(patId, dueDate, totalAmount, insAmount, patientAmount, status, paidAt);
+
+    const invoiceId = inv.lastInsertRowid as number;
+
+    const itemStmt = db.prepare(`
+      INSERT INTO invoice_items
+        (invoice_id, cpt_code, description, quantity, unit_price,
+         insurance_adjustment, patient_responsibility)
+      VALUES (?, ?, ?, 1, ?, ?, ?)
+    `);
+    for (const item of CPT_ITEMS) {
+      itemStmt.run(invoiceId, item.cpt_code, item.description,
+        item.unit_price, item.ins_adj, item.unit_price - item.ins_adj);
+    }
+
+    return invoiceId;
+  }
+
+  // ── Invoices ──────────────────────────────────────────────────────────────
+  console.log('\n    Seeding invoices…');
+
+  // Patient 1
+  const inv1Paid    = insertInvoiceWithItems(pid1, 'paid',    daysAgo(45).slice(0,10), daysAgo(30));
+  const inv1Pending = insertInvoiceWithItems(pid1, 'pending', daysFromNow(30), null);
+  const inv1Overdue = insertInvoiceWithItems(pid1, 'overdue', daysAgo(15).slice(0,10), null);
+
+  // Patient 2
+  const inv2Paid    = insertInvoiceWithItems(pid2, 'paid',    daysAgo(50).slice(0,10), daysAgo(35));
+  const inv2Pending = insertInvoiceWithItems(pid2, 'pending', daysFromNow(14), null);
+  const inv2Overdue = insertInvoiceWithItems(pid2, 'overdue', daysAgo(10).slice(0,10), null);
+
+  console.log('      ✔  3 invoices (paid/pending/overdue) with 5 CPT line items each for patient1, patient2');
+
+  // ── Payments (1 per paid invoice) ─────────────────────────────────────────
+  console.log('\n    Seeding payments…');
+
+  const pmtStmt = db.prepare(`
+    INSERT INTO payments
+      (invoice_id, amount, payment_method, status,
+       stripe_payment_intent_id, payment_date)
+    VALUES (?, 240.00, 'card', 'succeeded', ?, ?)
+  `);
+
+  pmtStmt.run(inv1Paid, `pi_test_seed_pat1_${Date.now()}`, daysAgo(30));
+  pmtStmt.run(inv2Paid, `pi_test_seed_pat2_${Date.now() + 1}`, daysAgo(35));
+
+  console.log('      ✔  1 succeeded payment each for patient1 and patient2 paid invoices');
+
+  // ── Billing Dispute (patient1 overdue invoice) ─────────────────────────────
+  console.log('\n    Seeding billing dispute…');
+
+  db.prepare(`
+    INSERT INTO billing_disputes
+      (invoice_id, patient_id, reason, status, filed_at)
+    VALUES (?, ?, ?, 'open', ?)
+  `).run(
+    inv1Overdue,
+    pid1,
+    'I do not recognise the CBC charge (85025). This test was not ordered during my visit.',
+    daysAgo(5),
+  );
+
+  // Update invoice status to disputed
+  db.prepare(`UPDATE invoices SET status = 'disputed' WHERE id = ?`).run(inv1Overdue);
+
+  console.log('      ✔  1 open billing dispute for patient1 overdue invoice');
+
+  // ── Payment Plan (patient2 overdue invoice) ────────────────────────────────
+  console.log('\n    Seeding payment plan…');
+
+  db.prepare(`
+    INSERT INTO payment_plans
+      (invoice_id, patient_id, installments_total, installments_paid,
+       installment_amount, next_payment_date, status)
+    VALUES (?, ?, 3, 0, 80.00, ?, 'active')
+  `).run(inv2Overdue, pid2, daysFromNow(30));
+
+  console.log('      ✔  1 active payment plan (3 installments) for patient2 overdue invoice');
+
+  console.log('\n  ✅  Phase 4 seed complete');
 }

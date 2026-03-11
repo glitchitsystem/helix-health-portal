@@ -323,3 +323,117 @@ export interface NotificationPreference {
   email_enabled: number;
   sms_enabled: number;
 }
+
+// ─── Phase 4: Billing, Insurance & Search ──────────────────────────────────
+
+export interface InsurancePlan {
+  id: number;
+  patient_id: number;
+  insurer_name: string;
+  plan_name: string;
+  member_id: string;
+  group_number: string | null;
+  effective_date: string;
+  expiration_date: string | null;
+  is_primary: number;
+  copay_amount: number;
+  deductible_amount: number;
+  deductible_met: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Invoice {
+  id: number;
+  patient_id: number;
+  appointment_id: number | null;
+  status: 'pending' | 'paid' | 'overdue' | 'cancelled' | 'disputed';
+  total_amount: number;
+  insurance_amount: number;
+  patient_amount: number;
+  invoice_date: string;
+  due_date: string;
+  paid_at: string | null;
+  created_at: string;
+  updated_at: string;
+  // joined
+  patient_name?: string;
+}
+
+export interface InvoiceItem {
+  id: number;
+  invoice_id: number;
+  cpt_code: string;
+  description: string;
+  quantity: number;
+  unit_price: number;
+  insurance_adjustment: number;
+  patient_responsibility: number;
+}
+
+export interface Payment {
+  id: number;
+  invoice_id: number;
+  patient_id: number;
+  amount: number;
+  payment_method: string;
+  stripe_payment_intent_id: string | null;
+  status: string;
+  paid_at: string;
+  payment_date: string;  // alias returned by server
+  notes: string | null;
+}
+
+export interface PaymentPlan {
+  id: number;
+  invoice_id: number;
+  patient_id: number;
+  installment_amount: number;
+  installments_total: number;
+  installments_paid: number;
+  next_due_date: string;
+  next_payment_date: string;  // alias
+  status: string;
+  created_at: string;
+}
+
+export interface BillingDispute {
+  id: number;
+  invoice_id: number;
+  patient_id: number;
+  reason: string;
+  status: 'open' | 'under_review' | 'resolved' | 'rejected';
+  submitted_at: string;
+  filed_at: string;          // alias returned by some endpoints
+  resolved_at: string | null;
+  resolution_notes: string | null;
+  // joined
+  patient_name?: string;
+}
+
+export interface BillingSummary {
+  total_owed: number;
+  last_payment_amount: number | null;
+  last_payment_date: string | null;
+  next_due_date: string | null;
+  next_due_amount: number | null;
+  pending_count: number;
+  overdue_count: number;
+}
+
+export interface SearchResult {
+  type: 'patient' | 'provider' | 'appointment' | 'note';
+  id: number;
+  title: string;
+  subtitle: string;
+  url: string;
+}
+
+export interface SearchResults {
+  patients: SearchResult[];
+  providers: SearchResult[];
+  appointments: SearchResult[];
+  notes: SearchResult[];
+  total: number;
+  query: string;
+}

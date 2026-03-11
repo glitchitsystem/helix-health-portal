@@ -41,6 +41,18 @@ import NewMessage              from './pages/NewMessage';
 import NotificationCenter      from './pages/NotificationCenter';
 import NotificationPreferences from './pages/NotificationPreferences';
 
+// Phase 4 — billing, search, admin
+import BillingDashboard      from './pages/BillingDashboard';
+import InvoiceDetail         from './pages/InvoiceDetail';
+import PaymentFlow           from './pages/PaymentFlow';
+import InsuranceManager      from './pages/InsuranceManager';
+import BillingWorkqueue      from './pages/BillingWorkqueue';
+import ReportsDashboard      from './pages/ReportsDashboard';
+import UserManager           from './pages/UserManager';
+import AuditLogViewer        from './pages/AuditLogViewer';
+import SystemHealthDashboard from './pages/SystemHealthDashboard';
+import GlobalSearchResults   from './pages/GlobalSearchResults';
+
 /** Placeholder for features not yet built. */
 const ComingSoon: React.FC<{ title: string }> = ({ title }) => (
   <div className="flex flex-col items-center justify-center py-20 text-center">
@@ -110,9 +122,20 @@ const App: React.FC = () => (
               <Route path="/labs" element={<ComingSoon title="Lab Results" />} />
             </Route>
 
-            {/* Billing / patient / admin */}
+            {/* ── Search (all authenticated) ─────────────────────── */}
+            <Route path="/search" element={<GlobalSearchResults />} />
+
+            {/* ── Billing — patient ─────────────────────────────────── */}
             <Route element={<ProtectedRoute allowedRoles={['patient', 'billing', 'admin']} />}>
-              <Route path="/billing" element={<ComingSoon title="Billing" />} />
+              <Route path="/billing"                element={<BillingDashboard />} />
+              <Route path="/billing/invoice/:id"    element={<InvoiceDetail />} />
+              <Route path="/billing/pay/:invoiceId" element={<PaymentFlow />} />
+              <Route path="/billing/insurance"      element={<InsuranceManager />} />
+            </Route>
+
+            {/* ── Billing workqueue — billing/admin ─────────────────── */}
+            <Route element={<ProtectedRoute allowedRoles={['billing', 'admin']} />}>
+              <Route path="/billing/workqueue" element={<BillingWorkqueue />} />
             </Route>
 
             {/* Provider / nurse / admin */}
@@ -120,9 +143,13 @@ const App: React.FC = () => (
               <Route path="/patients" element={<ComingSoon title="Patient List" />} />
             </Route>
 
-            {/* Admin only */}
+            {/* ── Admin only ────────────────────────────────────────── */}
             <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
-              <Route path="/admin" element={<ComingSoon title="Admin Panel" />} />
+              <Route path="/admin"               element={<ComingSoon title="Admin Panel" />} />
+              <Route path="/admin/reports"        element={<ReportsDashboard />} />
+              <Route path="/admin/users"          element={<UserManager />} />
+              <Route path="/admin/audit-log"      element={<AuditLogViewer />} />
+              <Route path="/admin/system-health"  element={<SystemHealthDashboard />} />
             </Route>
           </Route>
         </Route>

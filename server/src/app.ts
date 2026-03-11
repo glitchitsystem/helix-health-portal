@@ -18,6 +18,9 @@ import providersRouter      from './routes/providers';
 import prescriptionsRouter  from './routes/prescriptions';
 import messagesRouter       from './routes/messages';
 import notificationsRouter  from './routes/notifications';
+import billingRouter        from './routes/billing';
+import searchRouter         from './routes/search';
+import adminReportsRouter   from './routes/adminReports';
 
 /**
  * Creates and configures the Express application.
@@ -83,6 +86,12 @@ export function createApp(): express.Application {
   app.use('/api/prescriptions', prescriptionsRouter);   // /prescriptions/:id, /refill-requests
   app.use('/api/messages',      messagesRouter);
   app.use('/api/notifications', notificationsRouter);
+  app.use('/api/patients',      billingRouter);   // /patients/:id/invoices, /insurance, /billing-summary
+  app.use('/api/invoices',      billingRouter);   // /invoices/:id, /invoices/:id/pay etc.
+  app.use('/api/billing',       billingRouter);   // /billing/disputes
+  app.use('/api/admin',         billingRouter);   // /admin/reports/revenue
+  app.use('/api',               searchRouter);    // /search
+  app.use('/api/admin',         adminReportsRouter); // /admin/reports/* and /admin/users etc.
 
   // ── 404 fallback ─────────────────────────────────────────────────────────
   app.use((_req, res) => {
