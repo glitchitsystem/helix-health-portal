@@ -22,6 +22,7 @@ import { auditAccess } from '../middleware/audit';
 import { createError } from '../middleware/errorHandler';
 import { AuthenticatedRequest } from '../types';
 import { checkDrugInteractions } from '../services/drugInteractionService';
+import { validatePrescriptionDosage } from '../services/prescriptionValidation';
 import { notifyRefillReview } from '../services/notificationService';
 
 const router = Router();
@@ -118,6 +119,16 @@ router.post(
 
       if (!drug_name || !dosage || !frequency || !start_date) {
         return next(createError('drug_name, dosage, frequency, and start_date are required', 400));
+      }
+
+      // ── Dosage validation ─────────────────────────────────────────────────
+      const dosageCheck = validatePrescriptionDosage(
+        drug_name as string,
+        dosage as string,
+        frequency as string,
+      );
+      if (!dosageCheck.valid) {
+        return next(createError(dosageCheck.error ?? 'Dosage validation failed', 400));
       }
 
       // ── Drug interaction check ────────────────────────────────────────────

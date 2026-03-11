@@ -17,6 +17,28 @@ tags:
     description: Server health check
   - name: Auth
     description: Authentication and authorisation
+  - name: Patients
+    description: Patient demographics and management
+  - name: Appointments
+    description: Scheduling and appointment lifecycle
+  - name: Medical Records
+    description: Diagnoses, medications, allergies, vitals, labs, notes, documents
+  - name: Prescriptions
+    description: Prescription management and refill requests
+  - name: Drug Interactions
+    description: Drug-drug interaction checking
+  - name: Messages
+    description: Secure patient-provider messaging
+  - name: Notifications
+    description: In-app notification management
+  - name: Billing
+    description: Invoices, payments, disputes, and payment plans
+  - name: Insurance
+    description: Patient insurance plan management
+  - name: Search
+    description: Global search across patients and appointments
+  - name: Admin
+    description: Administrative reports and user management
 
 # ─── Security scheme ──────────────────────────────────────────────────────────
 components:
@@ -85,6 +107,413 @@ components:
           example: true
         mfaChallengeToken:
           type: string
+
+    Patient:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        mrn:
+          type: string
+          example: MRN-TEST-00001
+        firstName:
+          type: string
+          example: TEST_Patient
+        lastName:
+          type: string
+          example: One
+        dob:
+          type: string
+          format: date
+          example: "1985-06-15"
+        gender:
+          type: string
+          enum: [male, female, other, prefer_not_to_say]
+        phone:
+          type: string
+          example: "555-123-4567"
+        email:
+          type: string
+          format: email
+
+    Appointment:
+      type: object
+      properties:
+        id:
+          type: integer
+        patientId:
+          type: integer
+        providerId:
+          type: integer
+        appointmentTypeId:
+          type: integer
+        appointmentTypeName:
+          type: string
+          example: Follow-up
+        scheduledAt:
+          type: string
+          format: date-time
+        durationMinutes:
+          type: integer
+          example: 30
+        status:
+          type: string
+          enum: [scheduled, confirmed, completed, cancelled, no_show]
+        location:
+          type: string
+          example: Room 101
+        notes:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    Diagnosis:
+      type: object
+      properties:
+        id:
+          type: integer
+        patientId:
+          type: integer
+        icd10Code:
+          type: string
+          example: E11.9
+        icd10Description:
+          type: string
+          example: Type 2 Diabetes Mellitus without complications
+        status:
+          type: string
+          enum: [active, resolved, inactive, chronic]
+        severity:
+          type: string
+          enum: [mild, moderate, severe]
+        onsetDate:
+          type: string
+          format: date
+        createdAt:
+          type: string
+          format: date-time
+
+    Medication:
+      type: object
+      properties:
+        id:
+          type: integer
+        patientId:
+          type: integer
+        name:
+          type: string
+          example: Metformin
+        dosage:
+          type: string
+          example: 500mg
+        frequency:
+          type: string
+          example: Twice daily
+        route:
+          type: string
+          example: oral
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+          nullable: true
+        status:
+          type: string
+          enum: [active, discontinued, completed, on_hold]
+
+    Allergy:
+      type: object
+      properties:
+        id:
+          type: integer
+        patientId:
+          type: integer
+        allergen:
+          type: string
+          example: Penicillin
+        reactionType:
+          type: string
+          example: anaphylaxis
+        severity:
+          type: string
+          enum: [mild, moderate, severe]
+        status:
+          type: string
+          enum: [active, inactive, resolved]
+
+    VitalSigns:
+      type: object
+      properties:
+        id:
+          type: integer
+        patientId:
+          type: integer
+        recordedAt:
+          type: string
+          format: date-time
+        bpSystolic:
+          type: integer
+          example: 120
+        bpDiastolic:
+          type: integer
+          example: 80
+        heartRate:
+          type: integer
+          example: 72
+        temperature:
+          type: number
+          example: 37.1
+        weightKg:
+          type: number
+          example: 80.5
+        heightCm:
+          type: number
+          example: 175
+        o2Saturation:
+          type: number
+          example: 98.5
+
+    LabResult:
+      type: object
+      properties:
+        id:
+          type: integer
+        patientId:
+          type: integer
+        testName:
+          type: string
+          example: HbA1c
+        value:
+          type: string
+          example: "7.8"
+        unit:
+          type: string
+          example: "%"
+        referenceRangeLow:
+          type: number
+          nullable: true
+        referenceRangeHigh:
+          type: number
+          nullable: true
+        collectedAt:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [pending, final, flagged_high, flagged_low, cancelled]
+
+    ClinicalNote:
+      type: object
+      properties:
+        id:
+          type: integer
+        patientId:
+          type: integer
+        providerId:
+          type: integer
+        noteType:
+          type: string
+          enum: [progress, intake, discharge, referral]
+        subjective:
+          type: string
+        objective:
+          type: string
+        assessment:
+          type: string
+        plan:
+          type: string
+        isLocked:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    Prescription:
+      type: object
+      properties:
+        id:
+          type: integer
+        patientId:
+          type: integer
+        prescriberId:
+          type: integer
+        drugName:
+          type: string
+          example: Metformin
+        drugNdc:
+          type: string
+          nullable: true
+        dosage:
+          type: string
+          example: 500mg
+        frequency:
+          type: string
+          example: twice daily
+        route:
+          type: string
+          example: oral
+        quantity:
+          type: integer
+          example: 30
+        refillsRemaining:
+          type: integer
+          example: 3
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+          nullable: true
+        status:
+          type: string
+          enum: [active, discontinued, completed, on_hold]
+        isControlled:
+          type: boolean
+        scheduleClass:
+          type: string
+          nullable: true
+          enum: [II, III, IV, V]
+        pharmacyName:
+          type: string
+          nullable: true
+        pharmacyPhone:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+
+    Message:
+      type: object
+      properties:
+        id:
+          type: integer
+        threadId:
+          type: integer
+        senderId:
+          type: integer
+        body:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        isRead:
+          type: boolean
+
+    MessageThread:
+      type: object
+      properties:
+        id:
+          type: integer
+        subject:
+          type: string
+        createdBy:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        participantIds:
+          type: array
+          items:
+            type: integer
+
+    Notification:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        type:
+          type: string
+        title:
+          type: string
+        body:
+          type: string
+        isRead:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    Invoice:
+      type: object
+      properties:
+        id:
+          type: integer
+        patientId:
+          type: integer
+        appointmentId:
+          type: integer
+          nullable: true
+        status:
+          type: string
+          enum: [pending, paid, overdue, cancelled, disputed]
+        totalAmount:
+          type: number
+          example: 500.00
+        insuranceAmount:
+          type: number
+          example: 260.00
+        patientAmount:
+          type: number
+          example: 240.00
+        dueDate:
+          type: string
+          format: date
+        paidAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    InsurancePlan:
+      type: object
+      properties:
+        id:
+          type: integer
+        patientId:
+          type: integer
+        insurerName:
+          type: string
+          example: Blue Cross Blue Shield
+        planName:
+          type: string
+          example: PPO Gold
+        memberId:
+          type: string
+        groupNumber:
+          type: string
+        effectiveDate:
+          type: string
+          format: date
+        expirationDate:
+          type: string
+          format: date
+          nullable: true
+        copayAmount:
+          type: number
+        deductibleAmount:
+          type: number
+
+    Pagination:
+      type: object
+      properties:
+        total:
+          type: integer
+        page:
+          type: integer
+        perPage:
+          type: integer
+        totalPages:
+          type: integer
 
 # ─── Paths ────────────────────────────────────────────────────────────────────
 paths:
@@ -455,3 +884,1764 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiError'
+
+  # ── Patients ─────────────────────────────────────────────────────────────────
+
+  /patients:
+    get:
+      tags: [Patients]
+      summary: List all patients (admin, provider, nurse)
+      operationId: listPatients
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: q
+          in: query
+          schema:
+            type: string
+          description: Search by name or MRN
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Paginated patient list
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Patient'
+                      pagination:
+                        $ref: '#/components/schemas/Pagination'
+        '401':
+          description: Unauthorised
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
+  /patients/{patientId}:
+    get:
+      tags: [Patients]
+      summary: Get patient details
+      operationId: getPatient
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: patientId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Patient record
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Patient'
+        '403':
+          description: Forbidden (patient accessing another patient's record)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '404':
+          description: Patient not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
+    put:
+      tags: [Patients]
+      summary: Update patient demographics (admin, provider, nurse — or own record)
+      operationId: updatePatient
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: patientId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Patient'
+      responses:
+        '200':
+          description: Updated patient record
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSuccess'
+        '404':
+          description: Patient not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
+  # ── Appointments ──────────────────────────────────────────────────────────────
+
+  /appointments:
+    get:
+      tags: [Appointments]
+      summary: List appointments (filtered by role — provider sees all, patient sees own)
+      operationId: listAppointments
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [scheduled, confirmed, completed, cancelled, no_show]
+        - name: providerId
+          in: query
+          schema:
+            type: integer
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Appointment list
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Appointment'
+
+  /patients/{patientId}/appointments:
+    get:
+      tags: [Appointments]
+      summary: List appointments for a specific patient
+      operationId: listPatientAppointments
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: patientId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Patient appointment list
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Appointment'
+        '404':
+          description: Patient not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
+    post:
+      tags: [Appointments]
+      summary: Book an appointment for a patient
+      operationId: createAppointment
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: patientId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [appointmentTypeId, providerId, scheduledAt]
+              properties:
+                appointmentTypeId:
+                  type: integer
+                providerId:
+                  type: integer
+                scheduledAt:
+                  type: string
+                  format: date-time
+                location:
+                  type: string
+                notes:
+                  type: string
+      responses:
+        '201':
+          description: Appointment created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Appointment'
+        '409':
+          description: Scheduling conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
+  /appointments/{appointmentId}:
+    get:
+      tags: [Appointments]
+      summary: Get a single appointment
+      operationId: getAppointment
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: appointmentId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Appointment
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSuccess'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
+    patch:
+      tags: [Appointments]
+      summary: Update appointment status or details
+      operationId: updateAppointment
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: appointmentId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [confirmed, cancelled, no_show, completed]
+                notes:
+                  type: string
+                location:
+                  type: string
+      responses:
+        '200':
+          description: Updated appointment
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSuccess'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
+  /appointments/types:
+    get:
+      tags: [Appointments]
+      summary: List all appointment types
+      operationId: listAppointmentTypes
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Appointment type list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSuccess'
+
+  /appointments/availability:
+    get:
+      tags: [Appointments]
+      summary: Get available time slots for a provider
+      operationId: getAvailability
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: providerId
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: appointmentTypeId
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Available slots
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSuccess'
+
+  # ── Medical Records ───────────────────────────────────────────────────────────
+
+  /patients/{patientId}/diagnoses:
+    get:
+      tags: [Medical Records]
+      summary: List diagnoses for a patient
+      operationId: listDiagnoses
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: patientId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, resolved, inactive, chronic]
+      responses:
+        '200':
+          description: Diagnosis list
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Diagnosis'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
+    post:
+      tags: [Medical Records]
+      summary: Add a diagnosis (provider/admin)
+      operationId: createDiagnosis
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: patientId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [icd10Code, icd10Description]
+              properties:
+                icd10Code:
+                  type: string
+                  example: E11.9
+                icd10Description:
+                  type: string
+                status:
+                  type: string
+                  enum: [active, resolved, inactive, chronic]
+                  default: active
+                severity:
+                  type: string
+                  enum: [mild, moderate, severe]
+                onsetDate:
+                  type: string
+                  format: date
+      responses:
+        '201':
+          description: Diagnosis created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSuccess'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
+  /patients/{patientId}/medications:
+    get:
+      tags: [Medical Records]
+      summary: List active medications for a patient
+      operationId: listMedications
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: patientId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, discontinued, completed, on_hold]
+      responses:
+        '200':
+          description: Medication list
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Medication'
+
+  /patients/{patientId}/allergies:
+    get:
+      tags: [Medical Records]
+      summary: List allergies for a patient
+      operationId: listAllergies
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: patientId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Allergy list
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Allergy'
+
+    post:
+      tags: [Medical Records]
+      summary: Record a new allergy
+      operationId: createAllergy
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: patientId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [allergen, reactionType, severity]
+              properties:
+                allergen:
+                  type: string
+                reactionType:
+                  type: string
+                severity:
+                  type: string
+                  enum: [mild, moderate, severe]
+      responses:
+        '201':
+          description: Allergy recorded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSuccess'
+
+  /patients/{patientId}/vitals:
+    get:
+      tags: [Medical Records]
+      summary: List vital sign readings for a patient
+      operationId: listVitals
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: patientId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Vitals list
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/VitalSigns'
+
+    post:
+      tags: [Medical Records]
+      summary: Record a new vital signs reading
+      operationId: createVitals
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: patientId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                bpSystolic:
+                  type: integer
+                bpDiastolic:
+                  type: integer
+                heartRate:
+                  type: integer
+                temperature:
+                  type: number
+                weightKg:
+                  type: number
+                heightCm:
+                  type: number
+                o2Saturation:
+                  type: number
+      responses:
+        '201':
+          description: Vitals recorded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSuccess'
+
+  /patients/{patientId}/labs:
+    get:
+      tags: [Medical Records]
+      summary: List lab results for a patient
+      operationId: listLabResults
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: patientId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, final, flagged_high, flagged_low, cancelled]
+      responses:
+        '200':
+          description: Lab result list
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/LabResult'
+
+    post:
+      tags: [Medical Records]
+      summary: Add a lab result (provider/admin)
+      operationId: createLabResult
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: patientId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [testName, value, unit, collectedAt]
+              properties:
+                testName:
+                  type: string
+                value:
+                  type: string
+                unit:
+                  type: string
+                referenceRangeLow:
+                  type: number
+                  nullable: true
+                referenceRangeHigh:
+                  type: number
+                  nullable: true
+                collectedAt:
+                  type: string
+                  format: date-time
+                status:
+                  type: string
+                  enum: [pending, final, flagged_high, flagged_low, cancelled]
+      responses:
+        '201':
+          description: Lab result created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSuccess'
+
+  /patients/{patientId}/notes:
+    get:
+      tags: [Medical Records]
+      summary: List clinical notes for a patient
+      operationId: listClinicalNotes
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: patientId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Clinical note list
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ClinicalNote'
+
+    post:
+      tags: [Medical Records]
+      summary: Create a clinical note (provider only)
+      operationId: createClinicalNote
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: patientId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [noteType]
+              properties:
+                noteType:
+                  type: string
+                  enum: [progress, intake, discharge, referral]
+                subjective:
+                  type: string
+                objective:
+                  type: string
+                assessment:
+                  type: string
+                plan:
+                  type: string
+      responses:
+        '201':
+          description: Note created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSuccess'
+
+  /patients/{patientId}/summary:
+    get:
+      tags: [Medical Records]
+      summary: Get a consolidated patient health summary
+      operationId: getPatientSummary
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: patientId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Patient health summary (demographics + active meds + diagnoses + recent vitals)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSuccess'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
+  # ── Prescriptions ─────────────────────────────────────────────────────────────
+
+  /patients/{patientId}/prescriptions:
+    get:
+      tags: [Prescriptions]
+      summary: List prescriptions for a patient
+      operationId: listPrescriptions
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: patientId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, discontinued, completed, on_hold, all]
+      responses:
+        '200':
+          description: Prescription list
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Prescription'
+
+    post:
+      tags: [Prescriptions]
+      summary: Create a prescription (provider/admin only)
+      operationId: createPrescription
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: patientId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [drug_name, dosage, frequency, start_date]
+              properties:
+                drug_name:
+                  type: string
+                  example: Metformin
+                drug_ndc:
+                  type: string
+                  nullable: true
+                dosage:
+                  type: string
+                  example: 500mg
+                frequency:
+                  type: string
+                  example: twice daily
+                route:
+                  type: string
+                  default: oral
+                quantity:
+                  type: integer
+                  default: 30
+                refills_remaining:
+                  type: integer
+                  default: 0
+                start_date:
+                  type: string
+                  format: date
+                end_date:
+                  type: string
+                  format: date
+                  nullable: true
+                is_controlled:
+                  type: integer
+                  enum: [0, 1]
+                  default: 0
+                schedule_class:
+                  type: string
+                  nullable: true
+                  enum: [II, III, IV, V]
+                pharmacy_name:
+                  type: string
+                  nullable: true
+                pharmacy_phone:
+                  type: string
+                  nullable: true
+                notes:
+                  type: string
+                  nullable: true
+      responses:
+        '201':
+          description: Prescription created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Prescription'
+                      warnings:
+                        type: array
+                        items:
+                          type: string
+                        description: Drug interaction warnings (if any)
+        '400':
+          description: Validation error (missing fields or dosage exceeds max)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: Provider record not found or insufficient role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
+  /prescriptions/{prescriptionId}:
+    put:
+      tags: [Prescriptions]
+      summary: Update a prescription (provider, nurse, admin)
+      operationId: updatePrescription
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: prescriptionId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [active, discontinued, completed, on_hold]
+                refills_remaining:
+                  type: integer
+                notes:
+                  type: string
+      responses:
+        '200':
+          description: Updated prescription
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSuccess'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
+    delete:
+      tags: [Prescriptions]
+      summary: Discontinue a prescription
+      operationId: discontinuePrescription
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: prescriptionId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason:
+                  type: string
+      responses:
+        '200':
+          description: Prescription discontinued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSuccess'
+
+  /prescriptions/{prescriptionId}/refill-request:
+    post:
+      tags: [Prescriptions]
+      summary: Patient requests a prescription refill
+      operationId: createRefillRequest
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: prescriptionId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                notes:
+                  type: string
+      responses:
+        '201':
+          description: Refill request submitted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSuccess'
+        '403':
+          description: Not the patient's own prescription
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
+  /refill-requests:
+    get:
+      tags: [Prescriptions]
+      summary: List pending refill requests (provider view)
+      operationId: listRefillRequests
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Pending refill requests
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSuccess'
+
+  /refill-requests/{requestId}:
+    put:
+      tags: [Prescriptions]
+      summary: Approve or deny a refill request
+      operationId: updateRefillRequest
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: requestId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [approved, denied]
+                notes:
+                  type: string
+      responses:
+        '200':
+          description: Refill request status updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSuccess'
+
+  # ── Drug Interactions ─────────────────────────────────────────────────────────
+
+  /drug-interactions/check:
+    post:
+      tags: [Drug Interactions]
+      summary: Check for interactions between a new drug and a patient's active medications
+      operationId: checkDrugInteractions
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [patientId, drugName]
+              properties:
+                patientId:
+                  type: integer
+                drugName:
+                  type: string
+                  example: Warfarin
+      responses:
+        '200':
+          description: Interaction check result
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          interactions:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                drugA:
+                                  type: string
+                                drugB:
+                                  type: string
+                                severity:
+                                  type: string
+                                  enum: [mild, moderate, severe]
+                                description:
+                                  type: string
+
+  # ── Messages ──────────────────────────────────────────────────────────────────
+
+  /messages/threads:
+    get:
+      tags: [Messages]
+      summary: List message threads for the current user
+      operationId: listThreads
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Thread list
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/MessageThread'
+
+    post:
+      tags: [Messages]
+      summary: Start a new message thread
+      operationId: createThread
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [subject, participantIds, body]
+              properties:
+                subject:
+                  type: string
+                participantIds:
+                  type: array
+                  items:
+                    type: integer
+                body:
+                  type: string
+      responses:
+        '201':
+          description: Thread created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSuccess'
+
+  /messages/threads/{threadId}:
+    get:
+      tags: [Messages]
+      summary: Get a thread and its messages
+      operationId: getThread
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: threadId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Thread with messages
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSuccess'
+        '403':
+          description: Not a participant in this thread
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
+  /messages/threads/{threadId}/messages:
+    post:
+      tags: [Messages]
+      summary: Send a message in a thread
+      operationId: sendMessage
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: threadId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [body]
+              properties:
+                body:
+                  type: string
+      responses:
+        '201':
+          description: Message sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSuccess'
+
+  # ── Notifications ─────────────────────────────────────────────────────────────
+
+  /notifications:
+    get:
+      tags: [Notifications]
+      summary: List notifications for the current user
+      operationId: listNotifications
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: unreadOnly
+          in: query
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Notification list
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Notification'
+
+  /notifications/{notificationId}/read:
+    patch:
+      tags: [Notifications]
+      summary: Mark a notification as read
+      operationId: markNotificationRead
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: notificationId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Notification marked as read
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSuccess'
+
+  /notifications/read-all:
+    patch:
+      tags: [Notifications]
+      summary: Mark all notifications as read
+      operationId: markAllNotificationsRead
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: All notifications marked read
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSuccess'
+
+  # ── Billing ───────────────────────────────────────────────────────────────────
+
+  /patients/{patientId}/invoices:
+    get:
+      tags: [Billing]
+      summary: List invoices for a patient
+      operationId: listInvoices
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: patientId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, paid, overdue, cancelled, disputed]
+      responses:
+        '200':
+          description: Invoice list
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Invoice'
+
+  /invoices/{invoiceId}:
+    get:
+      tags: [Billing]
+      summary: Get an invoice with line items
+      operationId: getInvoice
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: invoiceId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Invoice with line items
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSuccess'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '404':
+          description: Invoice not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
+  /invoices/{invoiceId}/pay:
+    post:
+      tags: [Billing]
+      summary: Submit a payment for an invoice (mocked Stripe)
+      operationId: payInvoice
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: invoiceId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [paymentMethod, stripePaymentIntentId]
+              properties:
+                paymentMethod:
+                  type: string
+                  enum: [card, bank_transfer, check, payment_plan]
+                stripePaymentIntentId:
+                  type: string
+                  example: pi_test_mock_12345
+      responses:
+        '200':
+          description: Payment recorded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSuccess'
+        '402':
+          description: Payment failed (mocked)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
+  /invoices/{invoiceId}/dispute:
+    post:
+      tags: [Billing]
+      summary: File a billing dispute
+      operationId: disputeInvoice
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: invoiceId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason:
+                  type: string
+      responses:
+        '201':
+          description: Dispute filed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSuccess'
+
+  # ── Insurance ─────────────────────────────────────────────────────────────────
+
+  /patients/{patientId}/insurance:
+    get:
+      tags: [Insurance]
+      summary: List insurance plans for a patient
+      operationId: listInsurancePlans
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: patientId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Insurance plan list
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/InsurancePlan'
+
+    post:
+      tags: [Insurance]
+      summary: Add an insurance plan
+      operationId: createInsurancePlan
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: patientId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InsurancePlan'
+      responses:
+        '201':
+          description: Insurance plan created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSuccess'
+
+  # ── Search ────────────────────────────────────────────────────────────────────
+
+  /search:
+    get:
+      tags: [Search]
+      summary: Global search across patients, appointments, and medications
+      operationId: globalSearch
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 2
+          description: Search query (name, MRN, drug name, ICD-10 code, etc.)
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [patients, appointments, medications, all]
+            default: all
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          patients:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/Patient'
+                          appointments:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/Appointment'
+
+  # ── Admin / Reports ───────────────────────────────────────────────────────────
+
+  /admin/reports/utilisation:
+    get:
+      tags: [Admin]
+      summary: Provider utilisation report (admin only)
+      operationId: reportUtilisation
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Utilisation report data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSuccess'
+        '403':
+          description: Admin only
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
+  /admin/reports/population:
+    get:
+      tags: [Admin]
+      summary: Patient population demographics report
+      operationId: reportPopulation
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Population report
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSuccess'
+
+  /admin/reports/revenue:
+    get:
+      tags: [Admin]
+      summary: Revenue summary report
+      operationId: reportRevenue
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Revenue report data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSuccess'
+
+  /admin/audit-log:
+    get:
+      tags: [Admin]
+      summary: PHI access audit log (admin only)
+      operationId: listAuditLog
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: query
+          schema:
+            type: integer
+        - name: resource
+          in: query
+          schema:
+            type: string
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        '200':
+          description: Audit log entries
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                            userId:
+                              type: integer
+                            resource:
+                              type: string
+                            action:
+                              type: string
+                            resourceId:
+                              type: string
+                            ipAddress:
+                              type: string
+                            createdAt:
+                              type: string
+                              format: date-time
+
+  /admin/system-health:
+    get:
+      tags: [Admin]
+      summary: System health metrics (database size, uptime, etc.)
+      operationId: systemHealth
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: System health data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSuccess'
+
+  /admin/users:
+    get:
+      tags: [Admin]
+      summary: List all user accounts (admin only)
+      operationId: listUsers
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: role
+          in: query
+          schema:
+            type: string
+            enum: [admin, provider, nurse, billing, patient]
+        - name: isActive
+          in: query
+          schema:
+            type: boolean
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: User account list
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/AuthUser'
+                      pagination:
+                        $ref: '#/components/schemas/Pagination'

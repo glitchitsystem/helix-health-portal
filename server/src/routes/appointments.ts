@@ -60,6 +60,12 @@ function assertPatientAccess(
  *
  * A conflict exists when the new window overlaps an existing appointment:
  *   existing.start < new.end  AND  existing.end > new.start
+ *
+ * COURSE_BUG [Section 10 - Integration]: The second condition uses > (strict)
+ * instead of >=.  An appointment that ends exactly when the new one starts
+ * (back-to-back, zero-gap) is NOT detected as a conflict, allowing double-
+ * booking of provider time with no gap between appointments.
+ * Fix: change the final `> ?` to `>= ?` in both query branches.
  */
 function countConflicts(
   providerId: number,

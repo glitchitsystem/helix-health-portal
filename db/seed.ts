@@ -330,6 +330,7 @@ seedAccounts()
   .then(() => seedPhase2())
   .then(() => seedPhase3())
   .then(() => seedPhase4())
+  .then(() => seedPhase5())
   .then(() => {
     console.log('\n✅  Seed complete!\n');
     db.close();
@@ -976,9 +977,9 @@ function seedPhase4(): void {
 
     const inv = db.prepare(`
       INSERT INTO invoices
-        (patient_id, invoice_date, due_date, total_amount, insurance_amount,
+        (patient_id, due_date, total_amount, insurance_amount,
          patient_amount, status, paid_at)
-      VALUES (?, date('now','-30 days'), ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
     `).run(patId, dueDate, totalAmount, insAmount, patientAmount, status, paidAt);
 
     const invoiceId = inv.lastInsertRowid as number;
@@ -1017,13 +1018,13 @@ function seedPhase4(): void {
 
   const pmtStmt = db.prepare(`
     INSERT INTO payments
-      (invoice_id, amount, payment_method, status,
-       stripe_payment_intent_id, payment_date)
-    VALUES (?, 240.00, 'card', 'succeeded', ?, ?)
+      (invoice_id, patient_id, amount, payment_method, status,
+       stripe_payment_intent_id, paid_at)
+    VALUES (?, ?, 240.00, 'card', 'succeeded', ?, ?)
   `);
 
-  pmtStmt.run(inv1Paid, `pi_test_seed_pat1_${Date.now()}`, daysAgo(30));
-  pmtStmt.run(inv2Paid, `pi_test_seed_pat2_${Date.now() + 1}`, daysAgo(35));
+  pmtStmt.run(inv1Paid, pid1, `pi_test_seed_pat1_${Date.now()}`, daysAgo(30));
+  pmtStmt.run(inv2Paid, pid2, `pi_test_seed_pat2_${Date.now() + 1}`, daysAgo(35));
 
   console.log('      ✔  1 succeeded payment each for patient1 and patient2 paid invoices');
 
@@ -1032,7 +1033,7 @@ function seedPhase4(): void {
 
   db.prepare(`
     INSERT INTO billing_disputes
-      (invoice_id, patient_id, reason, status, filed_at)
+      (invoice_id, patient_id, reason, status, submitted_at)
     VALUES (?, ?, ?, 'open', ?)
   `).run(
     inv1Overdue,
@@ -1052,11 +1053,368 @@ function seedPhase4(): void {
   db.prepare(`
     INSERT INTO payment_plans
       (invoice_id, patient_id, installments_total, installments_paid,
-       installment_amount, next_payment_date, status)
+       installment_amount, next_due_date, status)
     VALUES (?, ?, 3, 0, 80.00, ?, 'active')
   `).run(inv2Overdue, pid2, daysFromNow(30));
 
   console.log('      ✔  1 active payment plan (3 installments) for patient2 overdue invoice');
 
   console.log('\n  ✅  Phase 4 seed complete');
+}
+
+// ─── Phase 5: Extended Data for Course Testing ────────────────────────────────
+
+async function seedPhase5(): Promise<void> {
+  console.log('\n⚙️   Phase 5 seed — extended patients, providers, appointments, complex meds, vitals…');
+
+  // ── Date helpers (local scope) ────────────────────────────────────────────
+  function daysAgo(n: number): string {
+    const d = new Date();
+    d.setDate(d.getDate() - n);
+    return d.toISOString();
+  }
+  function daysAhead(n: number): string {
+    const d = new Date();
+    d.setDate(d.getDate() + n);
+    return d.toISOString();
+  }
+  function monthsAgo(n: number): string {
+    const d = new Date();
+    d.setMonth(d.getMonth() - n);
+    return d.toISOString();
+  }
+
+  // ── Helper: resolve ids ───────────────────────────────────────────────────
+  const uid = (email: string): number =>
+    (db.prepare('SELECT id FROM users WHERE email = ?').get(email) as any)?.id;
+  const pidFromUserId = (userId: number): number =>
+    (db.prepare('SELECT id FROM patients WHERE user_id = ?').get(userId) as any)?.id;
+  const provIdFromUserId = (userId: number): number =>
+    (db.prepare('SELECT id FROM providers WHERE user_id = ?').get(userId) as any)?.id;
+  const typeId = (name: string): number =>
+    (db.prepare('SELECT id FROM appointment_types WHERE name = ?').get(name) as any)?.id;
+  const specialtyId = (name: string): number | null =>
+    (db.prepare('SELECT id FROM provider_specialties WHERE name = ?').get(name) as any)?.id ?? null;
+
+  const mainProviderUserId = uid('provider@helixhealthportal.test');
+
+  // ── 1. Extra providers ────────────────────────────────────────────────────
+  console.log('\n    Seeding 3 extra providers…');
+
+  const extraProviders: Array<{
+    email: string; label: string; firstName: string; lastName: string;
+    npi: string; license: string; specialty: string;
+  }> = [
+    {
+      email: 'cardiologist@helixhealthportal.test',
+      label: 'TEST_Dr_Cardiologist',
+      firstName: 'TEST_Dr', lastName: 'Cardiologist',
+      npi: '0000000002', license: 'LIC-TEST-CARD-002',
+      specialty: 'Cardiology',
+    },
+    {
+      email: 'dermatologist@helixhealthportal.test',
+      label: 'TEST_Dr_Dermatologist',
+      firstName: 'TEST_Dr', lastName: 'Dermatologist',
+      npi: '0000000003', license: 'LIC-TEST-DERM-003',
+      specialty: 'Dermatology',
+    },
+    {
+      email: 'orthopedic@helixhealthportal.test',
+      label: 'TEST_Dr_Orthopedic',
+      firstName: 'TEST_Dr', lastName: 'Orthopedic',
+      npi: '0000000004', license: 'LIC-TEST-ORTH-004',
+      specialty: 'Orthopedics',
+    },
+  ];
+
+  const extraProviderIds: number[] = []; // providers.id
+  const extraProviderUserIds: number[] = []; // users.id
+
+  for (const ep of extraProviders) {
+    const puId = await upsertUser(ep.email, ['provider']);
+    assignRoles(puId, ['provider']);
+
+    const specId = specialtyId(ep.specialty);
+    db.prepare(`
+      INSERT INTO providers (user_id, npi, specialty_id, license_number)
+      VALUES (?, ?, ?, ?)
+      ON CONFLICT(user_id) DO UPDATE
+        SET npi = excluded.npi, specialty_id = excluded.specialty_id,
+            license_number = excluded.license_number
+    `).run(puId, ep.npi, specId, ep.license);
+
+    // Add demographics via patient_demographics? No — providers don't have patient records.
+    // Store name in users table extension is not standard; just log it.
+    const provDbId = provIdFromUserId(puId);
+    extraProviderIds.push(provDbId);
+    extraProviderUserIds.push(puId);
+    console.log(`      ✔  ${ep.label}  [provider, NPI: ${ep.npi}]  (id: ${puId})`);
+  }
+
+  // ── 2. 20 extra patient accounts ──────────────────────────────────────────
+  console.log('\n    Seeding 20 extra patients (TEST_Patient_03 – TEST_Patient_22)…');
+
+  const phases5PatientIds: number[] = []; // patients.id
+
+  const p5PatientData: Array<{
+    email: string; mrnSuffix: string; first: string; last: string;
+    dob: string; sex: string; ssn: string;
+  }> = [
+    { email: 'patient03@helixhealthportal.test', mrnSuffix: '00003', first: 'TEST_Patient', last: 'Three',        dob: '1980-04-12', sex: 'M', ssn: '000-00-0003' },
+    { email: 'patient04@helixhealthportal.test', mrnSuffix: '00004', first: 'TEST_Patient', last: 'Four',         dob: '1965-09-28', sex: 'F', ssn: '000-00-0004' },
+    { email: 'patient05@helixhealthportal.test', mrnSuffix: '00005', first: 'TEST_Patient', last: 'Five',         dob: '1992-01-07', sex: 'M', ssn: '000-00-0005' },
+    { email: 'patient06@helixhealthportal.test', mrnSuffix: '00006', first: 'TEST_Patient', last: 'Six',          dob: '1955-11-19', sex: 'F', ssn: '000-00-0006' },
+    { email: 'patient07@helixhealthportal.test', mrnSuffix: '00007', first: 'TEST_Patient', last: 'Seven',        dob: '2001-06-30', sex: 'M', ssn: '000-00-0007' },
+    { email: 'patient08@helixhealthportal.test', mrnSuffix: '00008', first: 'TEST_Patient', last: 'Eight',        dob: '1978-03-14', sex: 'F', ssn: '000-00-0008' },
+    { email: 'patient09@helixhealthportal.test', mrnSuffix: '00009', first: 'TEST_Patient', last: 'Nine',         dob: '1948-07-22', sex: 'M', ssn: '000-00-0009' },
+    { email: 'patient10@helixhealthportal.test', mrnSuffix: '00010', first: 'TEST_Patient', last: 'Ten',          dob: '1988-12-05', sex: 'F', ssn: '000-00-0010' },
+    { email: 'patient11@helixhealthportal.test', mrnSuffix: '00011', first: 'TEST_Patient', last: 'Eleven',       dob: '1970-08-17', sex: 'M', ssn: '000-00-0011' },
+    { email: 'patient12@helixhealthportal.test', mrnSuffix: '00012', first: 'TEST_Patient', last: 'Twelve',       dob: '2003-02-25', sex: 'F', ssn: '000-00-0012' },
+    { email: 'patient13@helixhealthportal.test', mrnSuffix: '00013', first: 'TEST_Patient', last: 'Thirteen',     dob: '1961-10-08', sex: 'M', ssn: '000-00-0013' },
+    { email: 'patient14@helixhealthportal.test', mrnSuffix: '00014', first: 'TEST_Patient', last: 'Fourteen',     dob: '1995-05-16', sex: 'F', ssn: '000-00-0014' },
+    { email: 'patient15@helixhealthportal.test', mrnSuffix: '00015', first: 'TEST_Patient', last: 'Fifteen',      dob: '1983-09-01', sex: 'M', ssn: '000-00-0015' },
+    { email: 'patient16@helixhealthportal.test', mrnSuffix: '00016', first: 'TEST_Patient', last: 'Sixteen',      dob: '1940-04-30', sex: 'F', ssn: '000-00-0016' },
+    { email: 'patient17@helixhealthportal.test', mrnSuffix: '00017', first: 'TEST_Patient', last: 'Seventeen',    dob: '1999-11-11', sex: 'M', ssn: '000-00-0017' },
+    { email: 'patient18@helixhealthportal.test', mrnSuffix: '00018', first: 'TEST_Patient', last: 'Eighteen',     dob: '1975-07-04', sex: 'F', ssn: '000-00-0018' },
+    { email: 'patient19@helixhealthportal.test', mrnSuffix: '00019', first: 'TEST_Patient', last: 'Nineteen',     dob: '1957-01-23', sex: 'M', ssn: '000-00-0019' },
+    { email: 'patient20@helixhealthportal.test', mrnSuffix: '00020', first: 'TEST_Patient', last: 'Twenty',       dob: '2005-08-09', sex: 'F', ssn: '000-00-0020' },
+    { email: 'patient21@helixhealthportal.test', mrnSuffix: '00021', first: 'TEST_Patient', last: 'TwentyOne',    dob: '1986-03-27', sex: 'M', ssn: '000-00-0021' },
+    { email: 'patient22@helixhealthportal.test', mrnSuffix: '00022', first: 'TEST_Patient', last: 'TwentyTwo',    dob: '1968-06-13', sex: 'F', ssn: '000-00-0022' },
+  ];
+
+  for (const pd of p5PatientData) {
+    const puId = await upsertUser(pd.email, ['patient']);
+    assignRoles(puId, ['patient']);
+
+    const mrn = `MRN-TEST-${pd.mrnSuffix}`;
+    const existing = db.prepare('SELECT id FROM patients WHERE user_id = ?').get(puId) as { id: number } | undefined;
+    let patDbId: number;
+    if (existing) {
+      db.prepare('UPDATE patients SET mrn = ? WHERE id = ?').run(mrn, existing.id);
+      patDbId = existing.id;
+    } else {
+      const row = db.prepare('INSERT INTO patients (user_id, mrn) VALUES (?, ?)').run(puId, mrn);
+      patDbId = Number(row.lastInsertRowid);
+    }
+
+    db.prepare(`
+      INSERT INTO patient_demographics (patient_id, first_name, last_name, dob, gender)
+      VALUES (?, ?, ?, ?, ?)
+      ON CONFLICT(patient_id) DO UPDATE
+        SET first_name = excluded.first_name, last_name = excluded.last_name,
+            dob = excluded.dob, gender = excluded.gender
+    `).run(patDbId, pd.first, pd.last, pd.dob, pd.sex === 'M' ? 'male' : 'female');
+
+    phases5PatientIds.push(patDbId);
+  }
+  console.log(`      ✔  20 patients (patient03–patient22, all use password: TestPass123!)`);
+
+  // ── 3. 60 appointments ────────────────────────────────────────────────────
+  console.log('\n    Seeding 60 appointments…');
+
+  // All providers (DB ids): mainProvider + 3 extra
+  const allProviderIds = [
+    provIdFromUserId(mainProviderUserId),
+    ...extraProviderIds,
+  ];
+
+  const apptTypeNames = ['Annual Physical', 'Follow-up', 'Telehealth Consult', 'Urgent Care'];
+  const statuses60 = ['scheduled', 'completed', 'cancelled', 'no_show', 'confirmed'];
+
+  // Build a deterministic set of 60 appointments spread across 60 unique time slots
+  const appointments60: Array<{
+    patient_id: number; provider_id: number; type_name: string;
+    scheduled_at: string; status: string;
+  }> = [];
+
+  // Past 6 months: days 1–180 ago, spread in groups of 3 per patient per provider
+  // Future 4 weeks: days ahead 1–28
+  const pastOffsets  = [180, 165, 150, 135, 120, 105, 90, 75, 60, 45, 30, 15, 7, 3];
+  const futureOffsets = [2, 5, 9, 14, 17, 21, 25, 28];
+
+  let apptCounter = 0;
+  const usedSlots = new Set<string>();
+
+  function addAppt(patientId: number, providerId: number, typeName: string, scheduledAt: string, status: string) {
+    const slotKey = `${providerId}_${scheduledAt}`;
+    if (usedSlots.has(slotKey)) return;
+    usedSlots.add(slotKey);
+    appointments60.push({ patient_id: patientId, provider_id: providerId, type_name: typeName, scheduled_at: scheduledAt, status });
+    apptCounter++;
+  }
+
+  // Distribute: cycle through all 20 new patients and 4 providers
+  for (let i = 0; i < phases5PatientIds.length && apptCounter < 60; i++) {
+    const patId = phases5PatientIds[i];
+    const provId = allProviderIds[i % allProviderIds.length];
+    const pastOff = pastOffsets[i % pastOffsets.length];
+    const futOff  = futureOffsets[i % futureOffsets.length];
+    const past2   = pastOffsets[(i + 5) % pastOffsets.length];
+    const typePast1 = apptTypeNames[i % apptTypeNames.length];
+    const typePast2 = apptTypeNames[(i + 1) % apptTypeNames.length];
+    const typeFut   = apptTypeNames[(i + 2) % apptTypeNames.length];
+
+    // past appointment 1
+    const pastStatus1 = i % 5 === 3 ? 'no_show' : (i % 5 === 4 ? 'cancelled' : 'completed');
+    addAppt(patId, provId, typePast1, daysAgo(pastOff), pastStatus1);
+
+    // past appointment 2
+    const altProvId = allProviderIds[(i + 1) % allProviderIds.length];
+    addAppt(patId, altProvId, typePast2, daysAgo(past2), 'completed');
+
+    // future appointment
+    const futProvId = allProviderIds[(i + 2) % allProviderIds.length];
+    const futStatus = i % 3 === 0 ? 'confirmed' : 'scheduled';
+    addAppt(patId, futProvId, typeFut, daysAhead(futOff), futStatus);
+
+    if (apptCounter >= 60) break;
+  }
+
+  // Fill remaining up to 60 if needed
+  if (apptCounter < 60) {
+    for (let i = 0; i < phases5PatientIds.length && apptCounter < 60; i++) {
+      const patId = phases5PatientIds[i];
+      const provId = allProviderIds[(i + 3) % allProviderIds.length];
+      const off = pastOffsets[(i + 2) % pastOffsets.length];
+      addAppt(patId, provId, apptTypeNames[(i + 3) % 4], daysAgo(off - 2), 'completed');
+    }
+  }
+
+  for (const a of appointments60) {
+    const atId = typeId(a.type_name);
+    if (!atId) continue;
+    const existing = db.prepare(
+      'SELECT id FROM appointments WHERE patient_id = ? AND provider_id = ? AND scheduled_at = ?',
+    ).get(a.patient_id, a.provider_id, a.scheduled_at);
+    if (!existing) {
+      db.prepare(`
+        INSERT INTO appointments
+          (patient_id, provider_id, appointment_type_id, scheduled_at, duration_minutes, status)
+        VALUES (?, ?, ?, ?, (SELECT duration_minutes FROM appointment_types WHERE id = ?), ?)
+      `).run(a.patient_id, a.provider_id, atId, a.scheduled_at, atId, a.status);
+    }
+  }
+  console.log(`      ✔  ${apptCounter} appointments seeded (6 months past + 4 weeks future, all statuses)`);
+
+  // ── 4. 5 patients with complex medication lists (5+ active meds each) ─────
+  console.log('\n    Seeding complex medication lists…');
+
+  const mainProviderProviderId = provIdFromUserId(mainProviderUserId);
+
+  const complexMedPatients: Array<{
+    patientId: number; meds: Array<{ name: string; dosage: string; frequency: string; route: string; start_date: string }>;
+  }> = [
+    {
+      patientId: phases5PatientIds[0], // patient03 — polypharmacy: cardiac
+      meds: [
+        { name: 'Metoprolol',     dosage: '50mg',  frequency: 'twice daily',             route: 'oral', start_date: daysAgo(365).slice(0,10) },
+        { name: 'Amlodipine',     dosage: '5mg',   frequency: 'once daily',              route: 'oral', start_date: daysAgo(300).slice(0,10) },
+        { name: 'Furosemide',     dosage: '40mg',  frequency: 'once daily in morning',   route: 'oral', start_date: daysAgo(250).slice(0,10) },
+        { name: 'Spironolactone', dosage: '25mg',  frequency: 'once daily',              route: 'oral', start_date: daysAgo(200).slice(0,10) },
+        { name: 'Warfarin',       dosage: '5mg',   frequency: 'once daily',              route: 'oral', start_date: daysAgo(180).slice(0,10) },
+        { name: 'Digoxin',        dosage: '0.125mg', frequency: 'once daily',            route: 'oral', start_date: daysAgo(150).slice(0,10) },
+      ],
+    },
+    {
+      patientId: phases5PatientIds[2], // patient05 — diabetes + metabolic
+      meds: [
+        { name: 'Metformin',      dosage: '1000mg', frequency: 'twice daily',            route: 'oral', start_date: daysAgo(500).slice(0,10) },
+        { name: 'Glipizide',      dosage: '10mg',   frequency: 'once daily before breakfast', route: 'oral', start_date: daysAgo(400).slice(0,10) },
+        { name: 'Sitagliptin',    dosage: '100mg',  frequency: 'once daily',             route: 'oral', start_date: daysAgo(300).slice(0,10) },
+        { name: 'Empagliflozin',  dosage: '10mg',   frequency: 'once daily',             route: 'oral', start_date: daysAgo(200).slice(0,10) },
+        { name: 'Rosuvastatin',   dosage: '20mg',   frequency: 'once daily at bedtime',  route: 'oral', start_date: daysAgo(600).slice(0,10) },
+        { name: 'Lisinopril',     dosage: '10mg',   frequency: 'once daily',             route: 'oral', start_date: daysAgo(700).slice(0,10) },
+      ],
+    },
+    {
+      patientId: phases5PatientIds[5], // patient08 — rheumatology
+      meds: [
+        { name: 'Methotrexate',    dosage: '15mg',  frequency: 'once weekly',            route: 'oral', start_date: daysAgo(730).slice(0,10) },
+        { name: 'Folic Acid',      dosage: '1mg',   frequency: 'once daily',             route: 'oral', start_date: daysAgo(730).slice(0,10) },
+        { name: 'Hydroxychloroquine', dosage: '200mg', frequency: 'twice daily',         route: 'oral', start_date: daysAgo(600).slice(0,10) },
+        { name: 'Prednisone',      dosage: '5mg',   frequency: 'once daily',             route: 'oral', start_date: daysAgo(90).slice(0,10) },
+        { name: 'Celecoxib',       dosage: '200mg', frequency: 'twice daily with meals', route: 'oral', start_date: daysAgo(180).slice(0,10) },
+      ],
+    },
+    {
+      patientId: phases5PatientIds[9], // patient12 — psychiatric
+      meds: [
+        { name: 'Sertraline',     dosage: '100mg', frequency: 'once daily',              route: 'oral', start_date: daysAgo(540).slice(0,10) },
+        { name: 'Quetiapine',     dosage: '50mg',  frequency: 'once daily at bedtime',   route: 'oral', start_date: daysAgo(400).slice(0,10) },
+        { name: 'Clonazepam',     dosage: '0.5mg', frequency: 'twice daily as needed',   route: 'oral', start_date: daysAgo(300).slice(0,10) },
+        { name: 'Bupropion',      dosage: '150mg', frequency: 'once daily in morning',   route: 'oral', start_date: daysAgo(200).slice(0,10) },
+        { name: 'Lithium',        dosage: '300mg', frequency: 'three times daily',       route: 'oral', start_date: daysAgo(600).slice(0,10) },
+        { name: 'Lamotrigine',    dosage: '100mg', frequency: 'once daily',              route: 'oral', start_date: daysAgo(365).slice(0,10) },
+      ],
+    },
+    {
+      patientId: phases5PatientIds[14], // patient17 — HIV management
+      meds: [
+        { name: 'Tenofovir',      dosage: '300mg', frequency: 'once daily',              route: 'oral', start_date: daysAgo(1095).slice(0,10) },
+        { name: 'Emtricitabine',  dosage: '200mg', frequency: 'once daily',              route: 'oral', start_date: daysAgo(1095).slice(0,10) },
+        { name: 'Dolutegravir',   dosage: '50mg',  frequency: 'once daily',              route: 'oral', start_date: daysAgo(1095).slice(0,10) },
+        { name: 'Cotrimoxazole',  dosage: '960mg', frequency: 'once daily prophylaxis',  route: 'oral', start_date: daysAgo(900).slice(0,10) },
+        { name: 'Azithromycin',   dosage: '1200mg', frequency: 'once weekly prophylaxis', route: 'oral', start_date: daysAgo(800).slice(0,10) },
+      ],
+    },
+  ];
+
+  for (const { patientId, meds } of complexMedPatients) {
+    for (const m of meds) {
+      const ex = db.prepare(
+        'SELECT id FROM medications WHERE patient_id = ? AND name = ?',
+      ).get(patientId, m.name);
+      if (!ex) {
+        db.prepare(`
+          INSERT INTO medications
+            (patient_id, name, dosage, frequency, route, start_date, status, prescriber_id, created_by)
+          VALUES (?, ?, ?, ?, ?, ?, 'active', ?, ?)
+        `).run(patientId, m.name, m.dosage, m.frequency, m.route, m.start_date,
+              mainProviderProviderId, mainProviderUserId);
+      }
+    }
+    console.log(`      ✔  ${meds.length} medications for patient (DB id: ${patientId})`);
+  }
+
+  // ── 5. 3 patients with 12 months of monthly vitals ────────────────────────
+  console.log('\n    Seeding 12-month vital histories for 3 patients…');
+
+  const vitalsPatients = [
+    phases5PatientIds[1],   // patient04
+    phases5PatientIds[7],   // patient10
+    phases5PatientIds[13],  // patient16
+  ];
+
+  for (const patId of vitalsPatients) {
+    for (let mo = 12; mo >= 1; mo--) {
+      const recorded_at = monthsAgo(mo);
+      const ex = db.prepare(
+        'SELECT id FROM vitals WHERE patient_id = ? AND recorded_at = ?',
+      ).get(patId, recorded_at);
+      if (!ex) {
+        const bpVariance   = Math.round((mo % 3) * 2);
+        const hrVariance   = Math.round((mo % 4) * 1.5);
+        const weightKg     = +(72 + mo * 0.15).toFixed(1);
+        db.prepare(`
+          INSERT INTO vitals
+            (patient_id, recorded_at,
+             bp_systolic, bp_diastolic, heart_rate, temperature,
+             weight_kg, o2_saturation, recorded_by)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(
+          patId, recorded_at,
+          122 + bpVariance, 80 + bpVariance,
+          70 + hrVariance,
+          36.8 + (mo % 2) * 0.3,
+          weightKg,
+          97 + (mo % 2),
+          mainProviderUserId,
+        );
+      }
+    }
+    console.log(`      ✔  12 monthly vital readings for patient DB id: ${patId}`);
+  }
+
+  console.log('\n  ✅  Phase 5 seed complete');
 }

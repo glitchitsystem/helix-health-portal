@@ -424,6 +424,22 @@ router.post('/password-reset/confirm', async (req: Request, res: Response, next:
 
     let payload: Record<string, unknown>;
     try {
+      // COURSE_BUG [Section 10 - Auth]: Manual expiry pre-check uses > instead of >=.
+      // A token that has reached exactly its 30-minute expiry boundary still has
+      // timeRemaining === 0.  The check `timeRemaining > 0` treats it as expired
+      // one instant early.  In practice this rounds to approximately one second
+      // depending on clock resolution.
+      // Fix: change > 0  to  >= 0.
+      const rawDecoded = JSON.parse(
+        Buffer.from(token.split('.')[1], 'base64').toString('utf8'),
+      ) as { iat?: number };
+      if (rawDecoded.iat) {
+        const RESET_EXPIRY_MS = 30 * 60 * 1000; // 30 minutes
+        const timeRemaining = rawDecoded.iat * 1000 + RESET_EXPIRY_MS - Date.now();
+        if (!(timeRemaining > 0)) { // COURSE_BUG: should be >= 0
+          return next(createError('Reset token has expired', 401));
+        }
+      }
       payload = verifySignedToken(token);
     } catch {
       return next(createError('Invalid or expired reset token', 401));

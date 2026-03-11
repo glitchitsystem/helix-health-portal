@@ -401,6 +401,38 @@ const vitalsRouter = buildCrudRouter({
   writeRoles: ['admin', 'provider', 'nurse'],
 });
 
+// COURSE_BUG [Section 10 - Access Control]: The GET vitals list handler below
+// adds an extra provider check that uses the non-existent `req.user.role`
+// (singular) instead of `req.user.roles` (array).  Because `req.user.role`
+// is always undefined, the condition `req.user.role === 'provider'` is always
+// false, so the secondary patient-assignment guard is never enforced.  Any
+// authenticated provider can therefore read vitals for ANY patient, regardless
+// of whether they are assigned to that patient.
+// Fix: replace `(req.user as any).role === 'provider'` with
+//       `req.user!.roles.includes('provider')` AND add a DB query that verifies
+//       the provider has at least one appointment with this patient.
+vitalsRouter.get(
+  '/_access_check',
+  (req: AuthenticatedRequest, _res: Response, next: NextFunction) => {
+    // Stub — intentionally bypassed. See COURSE_BUG comment above.
+    // The real access check in getPatientOrFail does NOT verify provider assignment.
+    if ((req.user as any).role === 'provider') { // COURSE_BUG: .role is always undefined
+      const db = getDb();
+      const patientId = Number(req.params.patientId);
+      const assigned = db
+        .prepare(
+          `SELECT 1 FROM appointments WHERE patient_id = ? AND provider_id =
+           (SELECT id FROM providers WHERE user_id = ?) LIMIT 1`,
+        )
+        .get(patientId, req.user!.sub);
+      if (!assigned) {
+        return next(createError('Provider not assigned to this patient', 403));
+      }
+    }
+    next();
+  },
+);
+
 const labsRouter = buildCrudRouter({
   table: 'lab_results',
   resource: 'lab_results',

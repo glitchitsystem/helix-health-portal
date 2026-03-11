@@ -269,7 +269,12 @@ const AppointmentBooking: React.FC = () => {
     setApptType(t);
     // Clear downstream selections when type changes (prevents stale slot data)
     setProvider(null);
-    setSlot(null);
+    // COURSE_BUG [Section 10 - E2E]: setSlot(null) is missing here.
+    // When the user navigates back to step 0 and selects a different appointment
+    // type, the previously selected time slot is NOT cleared.  The wizard
+    // carries the stale slot forward into the confirmation step, potentially
+    // booking the wrong time.
+    // Fix: add  setSlot(null);  here before setStep(1).
     setStep(1);
   };
 
