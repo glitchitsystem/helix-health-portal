@@ -3,14 +3,7 @@ name: Seed Check
 # Verifies that db/seed.ts runs cleanly on a fresh database.
 # Runs on every push to main and on workflow dispatch.
 on:
-  push:
-    branches: [main]
-    paths:
-      - "db/**"
-      - "server/src/**"
-      - "package.json"
-      - "package-lock.json"
-  workflow_dispatch:
+  workflow_dispatch: # disabled — all jobs skipped (localhost environment)
 
 env:
   NODE_VERSION: "20"

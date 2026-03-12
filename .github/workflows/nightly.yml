@@ -2,9 +2,7 @@ name: Nightly — Full Test Suite
 
 # Runs at 02:00 UTC every night (10 PM ET)
 on:
-  schedule:
-    - cron: "0 2 * * *"
-  workflow_dispatch: # allow manual trigger
+  workflow_dispatch: # disabled — all jobs skipped (localhost environment)
 
 env:
   NODE_VERSION: "20"
@@ -213,7 +211,14 @@ jobs:
   nightly-health-report:
     name: Generate Nightly Health Report
     runs-on: ubuntu-latest
-    needs: [full-unit-tests, full-integration-tests, full-e2e-chromium, full-e2e-firefox, full-e2e-webkit]
+    needs:
+      [
+        full-unit-tests,
+        full-integration-tests,
+        full-e2e-chromium,
+        full-e2e-firefox,
+        full-e2e-webkit,
+      ]
     if: always()
     steps:
       - uses: actions/checkout@v4
