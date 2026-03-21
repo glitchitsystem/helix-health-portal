@@ -51,7 +51,7 @@ const config: Config = {
     '!server/src/**/*.d.ts',
     '!**/__mocks__/**',
   ],
-  coverageThresholds: {
+  coverageThreshold: {
     global: {
       branches: 70,
       lines:    80,

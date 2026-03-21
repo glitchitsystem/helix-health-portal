@@ -133,3 +133,77 @@ export function validatePrescriptionDosage(
 
   return { valid: true, dailyDoseMg, maxDailyMg };
 }
+
+/**
+ * Controlled substance schedule classification.
+ * Schedule II = highest abuse potential with accepted medical use.
+ * Schedule III–IV = lower potential. Schedule V = lowest.
+ * Unscheduled = not a controlled substance.
+ */
+export type ControlledSchedule = 'II' | 'III' | 'IV' | 'V' | 'unscheduled';
+
+/**
+ * Known controlled substance schedules by drug name (lowercase).
+ * Source: DEA Schedule of Controlled Substances (teaching subset only).
+ */
+export const CONTROLLED_SUBSTANCE_SCHEDULES: Record<string, ControlledSchedule> = {
+  // Schedule II — highest medical use, high abuse potential
+  oxycodone:        'II',
+  hydrocodone:      'II',
+  fentanyl:         'II',
+  adderall:         'II',
+  methylphenidate:  'II',
+  morphine:         'II',
+  methadone:        'II',
+
+  // Schedule III
+  codeine:          'III',
+  ketamine:         'III',
+  buprenorphine:    'III',
+
+  // Schedule IV
+  alprazolam:       'IV',
+  diazepam:         'IV',
+  clonazepam:       'IV',
+  lorazepam:        'IV',
+  zolpidem:         'IV',
+  tramadol:         'IV',
+
+  // Schedule V
+  pregabalin:       'V',
+  gabapentin:       'V',
+};
+
+/**
+ * Returns the DEA controlled substance schedule for a drug, or 'unscheduled'
+ * if the drug is not a controlled substance (or not in our teaching list).
+ *
+ * @param drugName - Drug name (case-insensitive, trimmed).
+ * @returns The schedule string, or 'unscheduled'.
+ */
+export function getControlledSchedule(drugName: string): ControlledSchedule {
+  const key = drugName.toLowerCase().trim();
+  return CONTROLLED_SUBSTANCE_SCHEDULES[key] ?? 'unscheduled';
+}
+
+/**
+ * Returns true if the drug is a federally controlled substance (any schedule II–V).
+ *
+ * @param drugName - Drug name (case-insensitive, trimmed).
+ * @returns true if controlled, false if unscheduled.
+ */
+export function isControlledSubstance(drugName: string): boolean {
+  return getControlledSchedule(drugName) !== 'unscheduled';
+}
+
+/**
+ * Returns true if the drug requires additional prescriber authorisation
+ * (Schedule II drugs require a separate DEA Form 222 and cannot be
+ * phoned in or e-faxed in most US states).
+ *
+ * @param drugName - Drug name (case-insensitive, trimmed).
+ * @returns true if Schedule II, false otherwise.
+ */
+export function requiresScheduleIIAuthorisation(drugName: string): boolean {
+  return getControlledSchedule(drugName) === 'II';
+}

@@ -109,6 +109,12 @@ export function seedMinimalData(): {
     `INSERT OR IGNORE INTO users (email, password_hash, email_verified, is_active)
      VALUES (?, ?, 1, 1) RETURNING id`,
   );
+  const lookupUser = db.prepare('SELECT id FROM users WHERE email = ?');
+
+  // Insert-or-lookup: RETURNING id is empty when the row already exists
+  // (INSERT OR IGNORE skips the insert), so fall back to a SELECT.
+  const upsertUser = (email: string): { id: number } =>
+    (insertUser.get(email, HASH) ?? lookupUser.get(email)) as { id: number };
 
   const insertRole = (userId: number, roleName: string) => {
     const role = db.prepare('SELECT id FROM roles WHERE name = ?').get(roleName) as { id: number } | undefined;
@@ -117,11 +123,11 @@ export function seedMinimalData(): {
     }
   };
 
-  const adminResult    = insertUser.get('admin@helixhealthportal.test', HASH)    as { id: number };
-  const providerResult = insertUser.get('provider@helixhealthportal.test', HASH) as { id: number };
-  const nurseResult    = insertUser.get('nurse@helixhealthportal.test', HASH)    as { id: number };
-  const billingResult  = insertUser.get('billing@helixhealthportal.test', HASH)  as { id: number };
-  const patientResult  = insertUser.get('patient1@helixhealthportal.test', HASH) as { id: number };
+  const adminResult    = upsertUser('admin@helixhealthportal.test');
+  const providerResult = upsertUser('provider@helixhealthportal.test');
+  const nurseResult    = upsertUser('nurse@helixhealthportal.test');
+  const billingResult  = upsertUser('billing@helixhealthportal.test');
+  const patientResult  = upsertUser('patient1@helixhealthportal.test');
 
   insertRole(adminResult.id,    'admin');
   insertRole(providerResult.id, 'provider');

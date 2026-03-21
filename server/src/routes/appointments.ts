@@ -24,6 +24,29 @@ const router = Router();
 // All appointment routes require authentication
 router.use(validateToken);
 
+// ─── GET /appointments/types ──────────────────────────────────────────────────
+
+/**
+ * Return all active appointment types.
+ * Used by the booking wizard to populate the type-selection step.
+ */
+router.get('/types', (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const db = getDb();
+    const types = db
+      .prepare(
+        `SELECT id, name, duration_minutes, color_hex, is_telehealth, is_active
+         FROM appointment_types
+         WHERE is_active = 1
+         ORDER BY name`,
+      )
+      .all();
+    res.json({ success: true, data: types });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 /**

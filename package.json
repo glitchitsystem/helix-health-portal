@@ -16,7 +16,11 @@
     "lint": "npm run lint --workspaces --if-present"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.11.1",
+    "@playwright/test": "^1.58.2",
+    "@types/supertest": "^7.2.0",
     "concurrently": "^8.2.2",
+    "supertest": "^7.2.2",
     "typescript": "^5.4.5"
   },
   "engines": {

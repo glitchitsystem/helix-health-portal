@@ -25,7 +25,7 @@ const StepType: React.FC<StepTypeProps> = ({ onSelect }) => {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    api.get<{ success: true; data: AppointmentType[] }>('/appointment-types')
+    api.get<{ success: true; data: AppointmentType[] }>('/appointments/types')
       .then((r) => setTypes(r.data.data.filter((t) => t.is_active)))
       .catch(() => setError('Failed to load appointment types.'))
       .finally(() => setLoading(false));
@@ -43,7 +43,9 @@ const StepType: React.FC<StepTypeProps> = ({ onSelect }) => {
           className="flex flex-col rounded-xl border-2 border-transparent bg-white p-5 text-left shadow-sm ring-1 ring-gray-200 transition hover:border-helix-500 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-helix-400"
         >
           <div className="mb-2 flex items-center gap-2">
+            {/* Decorative colour dot — hidden from assistive technology */}
             <span
+              aria-hidden="true"
               className="inline-block h-3 w-3 rounded-full"
               style={{ backgroundColor: t.color_hex }}
             />
@@ -121,6 +123,7 @@ const StepSlot: React.FC<StepSlotProps> = ({ apptType, onSelect, onBack }) => {
             <button
               key={p.id}
               onClick={() => setSelectedProvider(p)}
+              aria-pressed={selectedProvider?.id === p.id}
               className={`rounded-lg border p-3 text-left text-sm transition ${
                 selectedProvider?.id === p.id
                   ? 'border-helix-500 bg-helix-50 font-semibold text-helix-700'
@@ -139,8 +142,9 @@ const StepSlot: React.FC<StepSlotProps> = ({ apptType, onSelect, onBack }) => {
       {/* Date picker */}
       {selectedProvider && (
         <div>
-          <label className="mb-2 block text-sm font-medium text-gray-700">Select Date</label>
+          <label htmlFor="appt-date" className="mb-2 block text-sm font-medium text-gray-700">Select Date</label>
           <input
+            id="appt-date"
             type="date"
             value={date}
             min={new Date().toISOString().slice(0, 10)}
@@ -153,11 +157,11 @@ const StepSlot: React.FC<StepSlotProps> = ({ apptType, onSelect, onBack }) => {
       {/* Slots */}
       {selectedProvider && (
         <div>
-          <label className="mb-2 block text-sm font-medium text-gray-700">Available Times</label>
+          <p id="slots-label" className="mb-2 block text-sm font-medium text-gray-700">Available Times</p>
           {loadingSlots ? (
             <Spinner />
           ) : (
-            <div className="flex flex-wrap gap-2">
+            <div role="group" aria-labelledby="slots-label" className="flex flex-wrap gap-2">
               {slots.length === 0 && (
                 <p className="text-sm text-gray-500">No slots available for this date.</p>
               )}
@@ -165,6 +169,8 @@ const StepSlot: React.FC<StepSlotProps> = ({ apptType, onSelect, onBack }) => {
                 <button
                   key={s.start}
                   disabled={!s.available}
+                  aria-disabled={!s.available}
+                  aria-label={`${formatTime(s.start)}${!s.available ? ' — unavailable' : ''}`}
                   onClick={() => onSelect(selectedProvider, s)}
                   className={`rounded-lg border px-3 py-2 text-sm font-medium transition ${
                     s.available
@@ -211,7 +217,7 @@ const StepConfirm: React.FC<StepConfirmProps> = ({
     <div className="space-y-6">
       {error && <ErrorMsg msg={error} />}
       <div className="rounded-xl bg-gray-50 p-5 ring-1 ring-gray-200">
-        <h3 className="mb-4 text-base font-semibold text-gray-800">Appointment Summary</h3>
+        <h2 className="mb-4 text-base font-semibold text-gray-800">Appointment Summary</h2>
         <dl className="space-y-2 text-sm">
           <Row label="Type"     value={apptType.name} />
           <Row label="Duration" value={`${apptType.duration_minutes} min`} />
@@ -223,16 +229,19 @@ const StepConfirm: React.FC<StepConfirmProps> = ({
       </div>
 
       <div>
-        <label className="mb-1 block text-sm font-medium text-gray-700">
+        <label htmlFor="appt-notes" className="mb-1 block text-sm font-medium text-gray-700">
           Notes (optional)
         </label>
         <textarea
+          id="appt-notes"
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           rows={3}
           placeholder="Any additional information for your care team…"
+          aria-describedby="appt-notes-hint"
           className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-helix-400"
         />
+        <p id="appt-notes-hint" className="mt-1 text-xs text-gray-500">Optional — visible only to your care team.</p>
       </div>
 
       <div className="flex gap-3">
@@ -317,17 +326,20 @@ const AppointmentBooking: React.FC = () => {
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-gray-900">Book an Appointment</h1>
-        <p className="mt-1 text-sm text-gray-500">
+        <p className="mt-1 text-sm text-gray-600">
           Follow the steps below to schedule your visit.
         </p>
       </div>
 
       {/* Step indicator */}
-      <div className="mb-8 flex items-center">
+      <nav aria-label="Booking progress" className="mb-8">
+      <ol className="flex items-center">
         {STEPS.map((label, i) => (
           <React.Fragment key={label}>
-            <div className="flex flex-col items-center">
+            <li className="flex flex-col items-center">
               <div
+                aria-current={i === step ? 'step' : undefined}
+                aria-label={`Step ${i + 1}: ${label}${i < step ? ' — completed' : i === step ? ' — current' : ''}`}
                 className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold transition ${
                   i < step
                     ? 'bg-helix-600 text-white'
@@ -338,14 +350,15 @@ const AppointmentBooking: React.FC = () => {
               >
                 {i < step ? '✓' : i + 1}
               </div>
-              <span className="mt-1 text-xs text-gray-600">{label}</span>
-            </div>
+              <span aria-hidden="true" className="mt-1 text-xs text-gray-600">{label}</span>
+            </li>
             {i < STEPS.length - 1 && (
-              <div className={`mx-3 h-0.5 flex-1 ${i < step ? 'bg-helix-600' : 'bg-gray-200'}`} />
+              <li aria-hidden="true" className={`mx-3 h-0.5 flex-1 ${i < step ? 'bg-helix-600' : 'bg-gray-200'}`} />
             )}
           </React.Fragment>
         ))}
-      </div>
+      </ol>
+      </nav>
 
       {/* Steps */}
       <div className="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
