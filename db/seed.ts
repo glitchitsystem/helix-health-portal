@@ -1,7 +1,8 @@
 /**
  * db/seed.ts — Seed the Helix Health Portal database with test data.
  *
- * Run via:  npm run seed        (from the repo root)
+ * Run via:  npm run db:setup    (preferred, from the repo root)
+ *           npm run seed        (direct alias)
  *           npm run db:reset    (drops and re-seeds)
  *
  * All accounts use password: TestPass123!

@@ -79,7 +79,7 @@ cd helix-health-portal
 npm ci
 
 # 3. Seed the database with test data
-npm run seed
+npm run db:setup
 
 # 4. Start the development servers
 npm run dev
@@ -148,6 +148,7 @@ Run from the **repository root** unless noted.
 | `npm run dev --workspace=server`                | Start API server only                                |
 | `npm run dev --workspace=client`                | Start React client only                              |
 | `npm run build`                                 | Build server (`server/dist/`) + client (`client/dist/`) |
+| `npm run db:setup`                              | Create/update `db/helix.db` schema and seed test data |
 | `npm run seed`                                  | Seed `db/helix.db` with all-phase test data          |
 | `npm run db:reset`                              | Delete `db/helix.db` and re-seed from scratch        |
 | `npm run lint`                                  | ESLint across all workspaces                         |
@@ -254,10 +255,10 @@ npx jest && npx playwright test
 npm run db:reset
 
 # Manual equivalent
-rm db/helix.db && npm run seed
+node scripts/reset-db.cjs && npm run db:setup
 ```
 
-The seeder is idempotent: running `npm run seed` on an existing DB is safe.
+Use `npm run db:setup` for first-time setup. If you want a clean, repeatable local database state, use `npm run db:reset`.
 
 The test database (`db/helix.test.db`) is managed entirely by the test setup and is never shared with the development database.
 
