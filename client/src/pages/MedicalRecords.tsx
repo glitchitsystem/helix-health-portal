@@ -9,7 +9,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
-import { Diagnosis, Medication, Allergy, Vitals, LabResult } from '../types';
+import { ApiSuccess, AuthMeData, Diagnosis, Medication, Allergy, Vitals, LabResult } from '../types';
 
 type Tab = 'diagnoses' | 'medications' | 'allergies' | 'vitals' | 'labs';
 
@@ -572,6 +572,7 @@ const MedicalRecords: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>('diagnoses');
   const [resolvedPatientId, setResolvedPatientId] = useState<number | null>(null);
   const [loadingPatient, setLoadingPatient] = useState(true);
+  const [patientError, setPatientError] = useState('');
 
   const isStaff = user?.roles.some(r => ['admin', 'provider', 'nurse'].includes(r)) ?? false;
   const canWrite = isStaff;
@@ -583,13 +584,25 @@ const MedicalRecords: React.FC = () => {
       return;
     }
     // For patients: fetch their own patient ID
-    api.get<{ success: true; data: { patient_id: number } }>('/auth/me')
-      .then(r => setResolvedPatientId(r.data.data.patient_id))
-      .catch(() => setResolvedPatientId(null))
+    api.get<ApiSuccess<AuthMeData>>('/auth/me')
+      .then((r) => {
+        const patientId = r.data.data.patient_id ?? r.data.data.patient?.id ?? null;
+        if (patientId === null) {
+          setPatientError('Could not determine patient record.');
+          setResolvedPatientId(null);
+          return;
+        }
+        setResolvedPatientId(patientId);
+      })
+      .catch(() => {
+        setPatientError('Could not determine patient record.');
+        setResolvedPatientId(null);
+      })
       .finally(() => setLoadingPatient(false));
   }, [paramPatientId]);
 
-  if (loadingPatient || resolvedPatientId === null) return <Spinner />;
+  if (loadingPatient) return <Spinner />;
+  if (resolvedPatientId === null) return <ErrorMsg msg={patientError || 'Could not determine patient record.'} />;
 
   return (
     <div className="mx-auto max-w-5xl py-8">

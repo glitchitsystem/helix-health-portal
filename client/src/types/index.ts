@@ -10,6 +10,20 @@ export interface AuthUser {
   roles: string[];
 }
 
+export interface AuthMeData {
+  id: number;
+  email: string;
+  roles: string[];
+  patient_id: number | null;
+  patient: {
+    id: number;
+    mrn: string;
+    first_name: string | null;
+    last_name: string | null;
+  } | null;
+  provider_id: number | null;
+}
+
 export interface LoginResponse {
   accessToken: string;
   refreshToken: string;
