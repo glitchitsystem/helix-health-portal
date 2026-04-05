@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/your-org/helix-health-portal/actions/workflows/ci.yml/badge.svg)](https://github.com/your-org/helix-health-portal/actions/workflows/ci.yml)
 [![Seed Check](https://github.com/your-org/helix-health-portal/actions/workflows/seed-check.yml/badge.svg)](https://github.com/your-org/helix-health-portal/actions/workflows/seed-check.yml)
-![Node >=18](https://img.shields.io/badge/node-%E2%89%A518-green)
+![Node 18 or 20](https://img.shields.io/badge/node-18%20or%2020-green)
 
 > A realistic outpatient healthcare portal — sample application for the **QA Automation Course**.  
 > Zero external infrastructure required. SQLite, runs entirely on localhost.
@@ -42,9 +42,29 @@
 
 ## Prerequisites
 
-- **Node.js** >= 18.0.0
+- **Node.js** 18.x or 20.x
 - **npm** >= 8.0.0
 - No database server, no Docker, no cloud account required
+- On Windows, use **Node 20 LTS** to avoid native build issues with `better-sqlite3`
+
+---
+
+## Cross-Platform Setup
+
+Use **Volta** as the official setup path for this repo on both Windows and macOS.
+It gives students one consistent workflow and avoids OS-specific version-manager instructions.
+
+```bash
+# Windows (PowerShell)
+winget install Volta.Volta
+
+# macOS
+curl https://get.volta.sh | bash
+```
+
+This repo pins Node for Volta in [`package.json`](/c:/Users/Drago/projects/helix-health-portal/package.json), so after Volta is installed, running `node`, `npm`, or `npm ci` inside the repo will use the pinned version automatically.
+
+If you already use `fnm` or `nvm`, this repo also includes [`.nvmrc`](/c:/Users/Drago/projects/helix-health-portal/.nvmrc) pinned to `20`.
 
 ---
 
@@ -59,7 +79,7 @@ cd helix-health-portal
 npm ci
 
 # 3. Seed the database with test data
-npm run seed
+npm run db:setup
 
 # 4. Start the development servers
 npm run dev
@@ -128,6 +148,7 @@ Run from the **repository root** unless noted.
 | `npm run dev --workspace=server`                | Start API server only                                |
 | `npm run dev --workspace=client`                | Start React client only                              |
 | `npm run build`                                 | Build server (`server/dist/`) + client (`client/dist/`) |
+| `npm run db:setup`                              | Create/update `db/helix.db` schema and seed test data |
 | `npm run seed`                                  | Seed `db/helix.db` with all-phase test data          |
 | `npm run db:reset`                              | Delete `db/helix.db` and re-seed from scratch        |
 | `npm run lint`                                  | ESLint across all workspaces                         |
@@ -234,10 +255,10 @@ npx jest && npx playwright test
 npm run db:reset
 
 # Manual equivalent
-rm db/helix.db && npm run seed
+node scripts/reset-db.cjs && npm run db:setup
 ```
 
-The seeder is idempotent: running `npm run seed` on an existing DB is safe.
+Use `npm run db:setup` for first-time setup. If you want a clean, repeatable local database state, use `npm run db:reset`.
 
 The test database (`db/helix.test.db`) is managed entirely by the test setup and is never shared with the development database.
 
