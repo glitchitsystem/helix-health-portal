@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/your-org/helix-health-portal/actions/workflows/ci.yml/badge.svg)](https://github.com/your-org/helix-health-portal/actions/workflows/ci.yml)
 [![Seed Check](https://github.com/your-org/helix-health-portal/actions/workflows/seed-check.yml/badge.svg)](https://github.com/your-org/helix-health-portal/actions/workflows/seed-check.yml)
-![Node >=18](https://img.shields.io/badge/node-%E2%89%A518-green)
+![Node 18 or 20](https://img.shields.io/badge/node-18%20or%2020-green)
 
 > A realistic outpatient healthcare portal — sample application for the **QA Automation Course**.  
 > Zero external infrastructure required. SQLite, runs entirely on localhost.
@@ -42,9 +42,29 @@
 
 ## Prerequisites
 
-- **Node.js** >= 18.0.0
+- **Node.js** 18.x or 20.x
 - **npm** >= 8.0.0
 - No database server, no Docker, no cloud account required
+- On Windows, use **Node 20 LTS** to avoid native build issues with `better-sqlite3`
+
+---
+
+## Cross-Platform Setup
+
+Use **Volta** as the official setup path for this repo on both Windows and macOS.
+It gives students one consistent workflow and avoids OS-specific version-manager instructions.
+
+```bash
+# Windows (PowerShell)
+winget install Volta.Volta
+
+# macOS
+curl https://get.volta.sh | bash
+```
+
+This repo pins Node for Volta in [`package.json`](/c:/Users/Drago/projects/helix-health-portal/package.json), so after Volta is installed, running `node`, `npm`, or `npm ci` inside the repo will use the pinned version automatically.
+
+If you already use `fnm` or `nvm`, this repo also includes [`.nvmrc`](/c:/Users/Drago/projects/helix-health-portal/.nvmrc) pinned to `20`.
 
 ---
 
