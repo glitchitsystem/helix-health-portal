@@ -6,6 +6,7 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import api from '../services/api';
+import type { ApiSuccess } from '../types';
 
 interface HealthData {
   db_size_mb: number;
@@ -42,9 +43,9 @@ const SystemHealthDashboard: React.FC = () => {
   const fetchHealth = useCallback(() => {
     setError(null);
     api
-      .get<HealthData>('/admin/system-health')
+      .get<ApiSuccess<any>>('/admin/system-health')
       .then((r) => {
-        setHealth(r.data);
+        setHealth(normalizeHealth(r.data.data));
         setLastRefresh(new Date());
         setCountdown(30);
       })
@@ -166,3 +167,23 @@ const SystemHealthDashboard: React.FC = () => {
 };
 
 export default SystemHealthDashboard;
+
+function normalizeHealth(raw: any): HealthData {
+  return {
+    db_size_mb: Number(raw.db_size_mb ?? 0),
+    active_sessions: Number(raw.active_sessions ?? 0),
+    totals: {
+      users: Number(raw.total_users ?? 0),
+      patients: Number(raw.total_patients ?? 0),
+      appointments: Number(raw.total_appointments ?? 0),
+      messages: 0,
+    },
+    uptime_seconds: Number(raw.uptime_seconds ?? 0),
+    node_version: raw.node_version ?? 'unknown',
+    timestamp: raw.timestamp ?? new Date().toISOString(),
+    recent_audit_events: (raw.recent_audit_events_24h ?? []).map((event: any) => ({
+      event_type: event.event_type,
+      count: Number(event.c ?? 0),
+    })),
+  };
+}

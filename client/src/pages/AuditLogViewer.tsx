@@ -5,21 +5,21 @@
 
 import React, { useEffect, useState } from 'react';
 import api from '../services/api';
+import type { ApiSuccess } from '../types';
 
 interface AuditEntry {
   id: number;
   user_id: number | null;
   user_email: string | null;
   event_type: string;
-  resource_type: string | null;
-  resource_id: number | null;
   ip_address: string | null;
+  user_agent: string | null;
   metadata: string | null;
   created_at: string;
 }
 
 interface AuditResponse {
-  entries: AuditEntry[];
+  rows: AuditEntry[];
   total: number;
   limit: number;
   offset: number;
@@ -51,10 +51,10 @@ const AuditLogViewer: React.FC = () => {
     params.set('offset', String(off));
 
     api
-      .get<AuditResponse>(`/admin/audit-log?${params.toString()}`)
+      .get<ApiSuccess<AuditResponse>>(`/admin/audit-log?${params.toString()}`)
       .then((r) => {
-        setEntries(r.data.entries);
-        setTotal(r.data.total);
+        setEntries(r.data.data.rows);
+        setTotal(r.data.data.total);
         setOffset(off);
       })
       .catch(() => setError('Failed to load audit log.'))
@@ -69,13 +69,13 @@ const AuditLogViewer: React.FC = () => {
   };
 
   const exportCsv = () => {
-    const headers = ['ID', 'Timestamp', 'User', 'Event Type', 'Resource', 'IP', 'Metadata'];
+    const headers = ['ID', 'Timestamp', 'User', 'Event Type', 'User Agent', 'IP', 'Metadata'];
     const rows = entries.map((e) => [
       e.id,
       e.created_at,
       e.user_email ?? e.user_id ?? '',
       e.event_type,
-      e.resource_type ? `${e.resource_type}:${e.resource_id ?? ''}` : '',
+      e.user_agent ?? '',
       e.ip_address ?? '',
       e.metadata ?? '',
     ]);
@@ -190,7 +190,7 @@ const AuditLogViewer: React.FC = () => {
             <table className="min-w-full divide-y divide-gray-200 text-xs">
               <thead className="bg-gray-50">
                 <tr>
-                  {['Timestamp', 'User', 'Event Type', 'Resource', 'IP Address', 'Metadata'].map(
+                  {['Timestamp', 'User', 'Event Type', 'User Agent', 'IP Address', 'Metadata'].map(
                     (h) => (
                       <th
                         key={h}
@@ -224,9 +224,7 @@ const AuditLogViewer: React.FC = () => {
                         </span>
                       </td>
                       <td className="px-3 py-2 text-gray-500">
-                        {entry.resource_type
-                          ? `${entry.resource_type}${entry.resource_id ? `:${entry.resource_id}` : ''}`
-                          : '—'}
+                        {entry.user_agent ?? '—'}
                       </td>
                       <td className="px-3 py-2 text-gray-500">{entry.ip_address ?? '—'}</td>
                       <td className="px-3 py-2 max-w-xs truncate text-gray-500 font-mono">

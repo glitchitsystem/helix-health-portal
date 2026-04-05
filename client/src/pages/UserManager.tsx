@@ -6,17 +6,18 @@
 import React, { useEffect, useState } from 'react';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import type { ApiSuccess } from '../types';
 
 const ALL_ROLES = ['patient', 'provider', 'nurse', 'billing', 'admin'];
 
 interface UserRow {
   id: number;
   email: string;
-  first_name: string;
-  last_name: string;
+  first_name?: string | null;
+  last_name?: string | null;
   is_active: number;
   roles: string; // comma-separated from GROUP_CONCAT
-  mfa_enabled: number;
+  email_verified?: number;
   created_at: string;
 }
 
@@ -33,9 +34,10 @@ const UserManager: React.FC = () => {
 
   const load = () => {
     setLoading(true);
+    setError(null);
     api
-      .get<UserRow[]>('/admin/users')
-      .then((r) => setUsers(r.data))
+      .get<ApiSuccess<UserRow[]>>('/admin/users')
+      .then((r) => setUsers(r.data.data))
       .catch(() => setError('Failed to load users.'))
       .finally(() => setLoading(false));
   };
@@ -50,7 +52,7 @@ const UserManager: React.FC = () => {
       setActionMsg(`User ${action}d successfully.`);
       load();
     } catch (err: any) {
-      setActionMsg(err?.response?.data?.message ?? `Failed to ${action} user.`);
+      setActionMsg(err?.response?.data?.error ?? err?.response?.data?.message ?? `Failed to ${action} user.`);
     }
   };
 
@@ -66,7 +68,7 @@ const UserManager: React.FC = () => {
       setActionMsg('Roles updated.');
       load();
     } catch (err: any) {
-      setActionMsg(err?.response?.data?.message ?? 'Failed to update roles.');
+      setActionMsg(err?.response?.data?.error ?? err?.response?.data?.message ?? 'Failed to update roles.');
     }
   };
 
@@ -105,7 +107,7 @@ const UserManager: React.FC = () => {
                 <React.Fragment key={u.id}>
                   <tr className={`hover:bg-gray-50 ${!u.is_active ? 'opacity-60' : ''}`}>
                     <td className="px-4 py-3 font-medium text-gray-900">
-                      {u.first_name} {u.last_name}
+                      {formatUserName(u)}
                     </td>
                     <td className="px-4 py-3 text-gray-600">{u.email}</td>
                     <td className="px-4 py-3">
@@ -121,10 +123,10 @@ const UserManager: React.FC = () => {
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      {u.mfa_enabled ? (
-                        <span className="text-green-600 font-medium">✓ On</span>
+                      {u.email_verified ? (
+                        <span className="text-green-600 font-medium">Verified</span>
                       ) : (
-                        <span className="text-gray-400">Off</span>
+                        <span className="text-gray-400">Unverified</span>
                       )}
                     </td>
                     <td className="px-4 py-3">
@@ -170,7 +172,7 @@ const UserManager: React.FC = () => {
                       <td colSpan={7} className="px-4 py-4">
                         <div className="flex flex-col gap-3">
                           <p className="text-sm font-medium text-gray-700">
-                            Assign roles for {u.first_name} {u.last_name}:
+                            Assign roles for {formatUserName(u)}:
                           </p>
                           <div className="flex gap-4 flex-wrap">
                             {ALL_ROLES.map((role) => (
@@ -223,3 +225,15 @@ const UserManager: React.FC = () => {
 };
 
 export default UserManager;
+
+function formatUserName(user: UserRow): string {
+  const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ').trim();
+  if (fullName) return fullName;
+
+  const localPart = user.email.split('@')[0] ?? `User #${user.id}`;
+  return localPart
+    .split(/[._-]+/)
+    .filter(Boolean)
+    .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+    .join(' ');
+}

@@ -182,6 +182,23 @@ export interface LabResult {
   notes: string | null;
 }
 
+export interface PatientRecord {
+  id: number;
+  user_id: number;
+  mrn: string;
+  first_name: string | null;
+  last_name: string | null;
+  dob: string | null;
+  gender: string | null;
+  phone: string | null;
+  address_line1: string | null;
+  city: string | null;
+  state: string | null;
+  zip: string | null;
+  created_at: string;
+  updated_at?: string;
+}
+
 export interface ClinicalNote {
   id: number;
   patient_id: number;

@@ -29,8 +29,10 @@ import MedicalRecords     from './pages/MedicalRecords';
 import NoteEditor         from './pages/NoteEditor';
 import NoteViewer         from './pages/NoteViewer';
 import PatientChart       from './pages/PatientChart';
+import PatientList        from './pages/PatientList';
 import ProviderSchedule   from './pages/ProviderSchedule';
 import DocumentVault      from './pages/DocumentVault';
+import LabResultsHub      from './pages/LabResultsHub';
 
 // Phase 3 — prescriptions & communications
 import PrescriptionList        from './pages/PrescriptionList';
@@ -43,6 +45,7 @@ import NotificationPreferences from './pages/NotificationPreferences';
 
 // Phase 4 — billing, search, admin
 import BillingDashboard      from './pages/BillingDashboard';
+import BillingHub            from './pages/BillingHub';
 import InvoiceDetail         from './pages/InvoiceDetail';
 import PaymentFlow           from './pages/PaymentFlow';
 import InsuranceManager      from './pages/InsuranceManager';
@@ -52,6 +55,7 @@ import UserManager           from './pages/UserManager';
 import AuditLogViewer        from './pages/AuditLogViewer';
 import SystemHealthDashboard from './pages/SystemHealthDashboard';
 import GlobalSearchResults   from './pages/GlobalSearchResults';
+import AdminHome             from './pages/AdminHome';
 
 /** Placeholder for features not yet built. */
 const ComingSoon: React.FC<{ title: string }> = ({ title }) => (
@@ -119,7 +123,7 @@ const App: React.FC = () => (
 
             {/* Provider / nurse / patient */}
             <Route element={<ProtectedRoute allowedRoles={['patient', 'provider', 'nurse']} />}>
-              <Route path="/labs" element={<ComingSoon title="Lab Results" />} />
+              <Route path="/labs" element={<LabResultsHub />} />
             </Route>
 
             {/* ── Search (all authenticated) ─────────────────────── */}
@@ -127,7 +131,7 @@ const App: React.FC = () => (
 
             {/* ── Billing — patient ─────────────────────────────────── */}
             <Route element={<ProtectedRoute allowedRoles={['patient', 'billing', 'admin']} />}>
-              <Route path="/billing"                element={<BillingDashboard />} />
+              <Route path="/billing"                element={<BillingHub />} />
               <Route path="/billing/invoice/:id"    element={<InvoiceDetail />} />
               <Route path="/billing/pay/:invoiceId" element={<PaymentFlow />} />
               <Route path="/billing/insurance"      element={<InsuranceManager />} />
@@ -140,12 +144,12 @@ const App: React.FC = () => (
 
             {/* Provider / nurse / admin */}
             <Route element={<ProtectedRoute allowedRoles={['admin', 'provider', 'nurse']} />}>
-              <Route path="/patients" element={<ComingSoon title="Patient List" />} />
+              <Route path="/patients" element={<PatientList />} />
             </Route>
 
             {/* ── Admin only ────────────────────────────────────────── */}
             <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
-              <Route path="/admin"               element={<ComingSoon title="Admin Panel" />} />
+              <Route path="/admin"               element={<AdminHome />} />
               <Route path="/admin/reports"        element={<ReportsDashboard />} />
               <Route path="/admin/users"          element={<UserManager />} />
               <Route path="/admin/audit-log"      element={<AuditLogViewer />} />
