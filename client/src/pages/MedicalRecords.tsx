@@ -6,10 +6,10 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
-import { Diagnosis, Medication, Allergy, Vitals, LabResult } from '../types';
+import { ApiSuccess, AuthMeData, Diagnosis, Medication, Allergy, Vitals, LabResult } from '../types';
 
 type Tab = 'diagnoses' | 'medications' | 'allergies' | 'vitals' | 'labs';
 
@@ -566,15 +566,28 @@ const LabsTab: React.FC<{ patientId: number; canWrite: boolean }> = ({
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 
-const MedicalRecords: React.FC = () => {
+interface MedicalRecordsProps {
+  initialTab?: Tab;
+  pageTitle?: string;
+}
+
+const MedicalRecords: React.FC<MedicalRecordsProps> = ({ initialTab = 'diagnoses', pageTitle = 'Medical Records' }) => {
   const { user } = useAuth();
   const { patientId: paramPatientId } = useParams<{ patientId?: string }>();
-  const [activeTab, setActiveTab] = useState<Tab>('diagnoses');
+  const [searchParams] = useSearchParams();
+  const routeTab = parseTab(searchParams.get('tab'));
+  const [activeTab, setActiveTab] = useState<Tab>(routeTab ?? initialTab);
   const [resolvedPatientId, setResolvedPatientId] = useState<number | null>(null);
   const [loadingPatient, setLoadingPatient] = useState(true);
+  const [patientError, setPatientError] = useState('');
 
   const isStaff = user?.roles.some(r => ['admin', 'provider', 'nurse'].includes(r)) ?? false;
   const canWrite = isStaff;
+
+  useEffect(() => {
+    const nextTab = routeTab ?? initialTab;
+    setActiveTab(nextTab);
+  }, [initialTab, routeTab]);
 
   useEffect(() => {
     if (paramPatientId) {
@@ -583,17 +596,29 @@ const MedicalRecords: React.FC = () => {
       return;
     }
     // For patients: fetch their own patient ID
-    api.get<{ success: true; data: { patient_id: number } }>('/auth/me')
-      .then(r => setResolvedPatientId(r.data.data.patient_id))
-      .catch(() => setResolvedPatientId(null))
+    api.get<ApiSuccess<AuthMeData>>('/auth/me')
+      .then((r) => {
+        const patientId = r.data.data.patient_id ?? r.data.data.patient?.id ?? null;
+        if (patientId === null) {
+          setPatientError('Could not determine patient record.');
+          setResolvedPatientId(null);
+          return;
+        }
+        setResolvedPatientId(patientId);
+      })
+      .catch(() => {
+        setPatientError('Could not determine patient record.');
+        setResolvedPatientId(null);
+      })
       .finally(() => setLoadingPatient(false));
   }, [paramPatientId]);
 
-  if (loadingPatient || resolvedPatientId === null) return <Spinner />;
+  if (loadingPatient) return <Spinner />;
+  if (resolvedPatientId === null) return <ErrorMsg msg={patientError || 'Could not determine patient record.'} />;
 
   return (
     <div className="mx-auto max-w-5xl py-8">
-      <h1 className="mb-6 text-2xl font-bold text-gray-900">Medical Records</h1>
+      <h1 className="mb-6 text-2xl font-bold text-gray-900">{pageTitle}</h1>
 
       {/* Tab bar */}
       <div className="mb-6 flex gap-1 overflow-x-auto rounded-lg bg-gray-100 p-1">
@@ -691,6 +716,12 @@ const LabeledTextarea: React.FC<TextareaProps> = ({ label, value, onChange }) =>
 
 function formatShortDate(iso: string): string {
   return new Date(iso).toLocaleString([], { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
+function parseTab(value: string | null): Tab | null {
+  return value && TABS.some((tab) => tab.id === value)
+    ? (value as Tab)
+    : null;
 }
 
 export default MedicalRecords;

@@ -6,9 +6,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
-import type { BillingSummary, Invoice, InsurancePlan } from '../types';
+import type { ApiSuccess, AuthMeData, BillingSummary, Invoice, InsurancePlan } from '../types';
 
 const STATUS_BADGE: Record<string, string> = {
   paid: 'bg-green-100 text-green-800',
@@ -19,8 +18,6 @@ const STATUS_BADGE: Record<string, string> = {
 };
 
 const BillingDashboard: React.FC = () => {
-  const { user } = useAuth();
-
   const [patientId, setPatientId] = useState<number | null>(null);
   const [summary, setSummary] = useState<BillingSummary | null>(null);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -33,23 +30,34 @@ const BillingDashboard: React.FC = () => {
     // For staff reviewing a patient, a patientId query param could be used.
     // For now fall back to the authenticated user's own patient record.
     api
-      .get<{ success: true; data: { patient_id: number } }>('/auth/me')
-      .then((r) => setPatientId(r.data.data.patient_id))
-      .catch(() => setError('Unable to resolve patient record.'));
+      .get<ApiSuccess<AuthMeData>>('/auth/me')
+      .then((r) => {
+        const resolvedPatientId = r.data.data.patient_id ?? r.data.data.patient?.id ?? null;
+        if (resolvedPatientId === null) {
+          setError('Unable to resolve patient record.');
+          setLoading(false);
+          return;
+        }
+        setPatientId(resolvedPatientId);
+      })
+      .catch(() => {
+        setError('Unable to resolve patient record.');
+        setLoading(false);
+      });
   }, []);
 
   useEffect(() => {
     if (!patientId) return;
     setLoading(true);
     Promise.all([
-      api.get<BillingSummary>(`/patients/${patientId}/billing-summary`),
-      api.get<Invoice[]>(`/patients/${patientId}/invoices?status=all`),
-      api.get<InsurancePlan[]>(`/patients/${patientId}/insurance`),
+      api.get<ApiSuccess<BillingSummary>>(`/patients/${patientId}/billing-summary`),
+      api.get<ApiSuccess<Invoice[]>>(`/patients/${patientId}/invoices?status=all`),
+      api.get<ApiSuccess<InsurancePlan[]>>(`/patients/${patientId}/insurance`),
     ])
       .then(([summaryRes, invoicesRes, plansRes]) => {
-        setSummary(summaryRes.data);
-        setInvoices(invoicesRes.data);
-        setPlans(plansRes.data);
+        setSummary(summaryRes.data.data);
+        setInvoices(invoicesRes.data.data);
+        setPlans(plansRes.data.data);
       })
       .catch(() => setError('Failed to load billing data.'))
       .finally(() => setLoading(false));

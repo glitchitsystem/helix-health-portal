@@ -5,9 +5,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
-import type { InsurancePlan } from '../types';
+import type { ApiSuccess, AuthMeData, InsurancePlan } from '../types';
 
 interface PlanForm {
   insurer_name: string;
@@ -36,8 +35,6 @@ const EMPTY_FORM: PlanForm = {
 };
 
 const InsuranceManager: React.FC = () => {
-  const { user } = useAuth();
-
   const [patientId, setPatientId] = useState<number | null>(null);
   const [plans, setPlans] = useState<InsurancePlan[]>([]);
   const [loading, setLoading] = useState(true);
@@ -59,17 +56,28 @@ const InsuranceManager: React.FC = () => {
     if (!patientId) return;
     setLoading(true);
     api
-      .get<InsurancePlan[]>(`/patients/${patientId}/insurance`)
-      .then((r) => setPlans(r.data))
+      .get<ApiSuccess<InsurancePlan[]>>(`/patients/${patientId}/insurance`)
+      .then((r) => setPlans(r.data.data))
       .catch(() => setError('Failed to load insurance plans.'))
       .finally(() => setLoading(false));
   };
 
   useEffect(() => {
     api
-      .get<{ success: true; data: { patient_id: number } }>('/auth/me')
-      .then((r) => setPatientId(r.data.data.patient_id))
-      .catch(() => setError('Unable to resolve patient record.'));
+      .get<ApiSuccess<AuthMeData>>('/auth/me')
+      .then((r) => {
+        const resolvedPatientId = r.data.data.patient_id ?? r.data.data.patient?.id ?? null;
+        if (resolvedPatientId === null) {
+          setError('Unable to resolve patient record.');
+          setLoading(false);
+          return;
+        }
+        setPatientId(resolvedPatientId);
+      })
+      .catch(() => {
+        setError('Unable to resolve patient record.');
+        setLoading(false);
+      });
   }, []);
 
   useEffect(load, [patientId]); // eslint-disable-line react-hooks/exhaustive-deps

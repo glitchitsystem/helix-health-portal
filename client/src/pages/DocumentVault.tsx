@@ -10,7 +10,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
-import { Document } from '../types';
+import { ApiSuccess, AuthMeData, Document } from '../types';
 
 const DocumentVault: React.FC = () => {
   const { patientId: paramPatientId } = useParams<{ patientId?: string }>();
@@ -35,21 +35,28 @@ const DocumentVault: React.FC = () => {
   useEffect(() => {
     if (paramPatientId) {
       setPatientId(Number(paramPatientId));
-    } else {
-      // Patient user — fetch own patient record
-      api.get<{ data: { id: number } }>('/auth/me')
-        .then(r => {
-          // Get patient record linked to this user
-          return api.get<{ data: { id: number }[] }>(`/patients?user_id=${r.data.data.id}`);
-        })
-        .then(r => setPatientId(r.data.data?.[0]?.id ?? null))
-        .catch(() => setError('Could not determine patient record.'));
+      setLoading(false);
+      return;
     }
+
+    api.get<ApiSuccess<AuthMeData>>('/auth/me')
+      .then((r) => {
+        const resolvedPatientId = r.data.data.patient_id ?? r.data.data.patient?.id ?? null;
+        if (resolvedPatientId === null) {
+          setError('Could not determine patient record.');
+          return;
+        }
+        setPatientId(resolvedPatientId);
+      })
+      .catch(() => setError('Could not determine patient record.'));
   }, [paramPatientId]);
 
   // Fetch documents once patientId is known
   useEffect(() => {
-    if (!patientId) return;
+    if (!patientId) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     api.get<{ data: Document[] }>(`/patients/${patientId}/documents`)
       .then(r => setDocuments(r.data.data))

@@ -6,7 +6,7 @@
 import React, { useEffect, useState } from 'react';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
-import { Prescription } from '../types';
+import { ApiSuccess, AuthMeData, Prescription } from '../types';
 
 type StatusFilter = 'active' | 'all';
 
@@ -30,12 +30,20 @@ export default function PrescriptionList() {
   // Resolve the patient record for the logged-in user
   useEffect(() => {
     if (!user) return;
-    api.get('/auth/me')
+    api.get<ApiSuccess<AuthMeData>>('/auth/me')
       .then((r) => {
-        const pid = r.data?.data?.patient?.id ?? null;
+        const pid = r.data.data.patient_id ?? r.data.data.patient?.id ?? null;
+        if (pid === null) {
+          setError('Could not load patient profile.');
+          setLoading(false);
+          return;
+        }
         setPatientId(pid);
       })
-      .catch(() => setError('Could not load patient profile.'));
+      .catch(() => {
+        setError('Could not load patient profile.');
+        setLoading(false);
+      });
   }, [user]);
 
   useEffect(() => {

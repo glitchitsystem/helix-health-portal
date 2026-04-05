@@ -248,6 +248,54 @@ router.post('/refresh', (req: Request, res: Response, next: NextFunction) => {
   }
 });
 
+// ─── GET /me ──────────────────────────────────────────────────────────────────
+
+/**
+ * Returns the authenticated user's profile plus linked patient/provider IDs.
+ * This is used by the client to resolve patient-scoped routes for the current
+ * session without needing a separate patient lookup call.
+ */
+router.get('/me', validateToken, (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const db = getDb();
+    const userId = req.user!.sub;
+
+    const patient = db.prepare(
+      `SELECT p.id, p.mrn, d.first_name, d.last_name
+       FROM patients p
+       LEFT JOIN patient_demographics d ON d.patient_id = p.id
+       WHERE p.user_id = ?`,
+    ).get(userId) as
+      | { id: number; mrn: string; first_name: string | null; last_name: string | null }
+      | undefined;
+
+    const provider = db.prepare(
+      'SELECT id FROM providers WHERE user_id = ?',
+    ).get(userId) as { id: number } | undefined;
+
+    return res.json({
+      success: true,
+      data: {
+        id: req.user!.sub,
+        email: req.user!.email,
+        roles: req.user!.roles,
+        patient_id: patient?.id ?? null,
+        patient: patient
+          ? {
+              id: patient.id,
+              mrn: patient.mrn,
+              first_name: patient.first_name,
+              last_name: patient.last_name,
+            }
+          : null,
+        provider_id: provider?.id ?? null,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // ─── POST /mfa/setup ──────────────────────────────────────────────────────────
 
 /**
