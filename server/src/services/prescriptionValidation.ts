@@ -12,15 +12,15 @@
  * This list is intentionally limited for course use.
  */
 export const MAX_DAILY_DOSES_MG: Record<string, number> = {
-  metformin:    2550,
-  lisinopril:     40,
-  atorvastatin:   80,
-  amlodipine:     10,
-  omeprazole:     40,
+  metformin: 2550,
+  lisinopril: 40,
+  atorvastatin: 80,
+  amlodipine: 10,
+  omeprazole: 40,
   levothyroxine: 300,
-  warfarin:       15,
-  aspirin:      4000,
-  ibuprofen:    3200,
+  warfarin: 15,
+  aspirin: 4000,
+  ibuprofen: 3200,
   acetaminophen: 4000,
 };
 
@@ -28,17 +28,17 @@ export const MAX_DAILY_DOSES_MG: Record<string, number> = {
  * Maps plain-English frequency strings to doses-per-day.
  */
 export const FREQUENCY_TO_DAILY: Record<string, number> = {
-  'once daily':   1,
-  'qd':           1,
-  'twice daily':  2,
-  'bid':          2,
-  'three times daily': 3,
-  'tid':          3,
-  'four times daily':  4,
-  'qid':          4,
-  'every 6 hours':     4,
-  'every 8 hours':     3,
-  'every 12 hours':    2,
+  "once daily": 1,
+  qd: 1,
+  "twice daily": 2,
+  bid: 2,
+  "three times daily": 3,
+  tid: 3,
+  "four times daily": 4,
+  qid: 4,
+  "every 6 hours": 4,
+  "every 8 hours": 3,
+  "every 12 hours": 2,
 };
 
 /**
@@ -118,9 +118,7 @@ export function validatePrescriptionDosage(
 
   const dailyDoseMg = doseMg * perDay;
 
-  // COURSE_BUG [Section 10 - Unit]: Uses > instead of >=.
-  // A prescription at exactly the maximum daily dose boundary (e.g. metformin 1275mg BID = 2550mg/day)
-  // incorrectly passes validation because 2550 > 2550 is false.
+  // COURSE_BUG: Uses > instead of >=.
   // Fix: change > to >=
   if (dailyDoseMg > maxDailyMg) {
     return {
@@ -140,38 +138,41 @@ export function validatePrescriptionDosage(
  * Schedule III–IV = lower potential. Schedule V = lowest.
  * Unscheduled = not a controlled substance.
  */
-export type ControlledSchedule = 'II' | 'III' | 'IV' | 'V' | 'unscheduled';
+export type ControlledSchedule = "II" | "III" | "IV" | "V" | "unscheduled";
 
 /**
  * Known controlled substance schedules by drug name (lowercase).
  * Source: DEA Schedule of Controlled Substances (teaching subset only).
  */
-export const CONTROLLED_SUBSTANCE_SCHEDULES: Record<string, ControlledSchedule> = {
+export const CONTROLLED_SUBSTANCE_SCHEDULES: Record<
+  string,
+  ControlledSchedule
+> = {
   // Schedule II — highest medical use, high abuse potential
-  oxycodone:        'II',
-  hydrocodone:      'II',
-  fentanyl:         'II',
-  adderall:         'II',
-  methylphenidate:  'II',
-  morphine:         'II',
-  methadone:        'II',
+  oxycodone: "II",
+  hydrocodone: "II",
+  fentanyl: "II",
+  adderall: "II",
+  methylphenidate: "II",
+  morphine: "II",
+  methadone: "II",
 
   // Schedule III
-  codeine:          'III',
-  ketamine:         'III',
-  buprenorphine:    'III',
+  codeine: "III",
+  ketamine: "III",
+  buprenorphine: "III",
 
   // Schedule IV
-  alprazolam:       'IV',
-  diazepam:         'IV',
-  clonazepam:       'IV',
-  lorazepam:        'IV',
-  zolpidem:         'IV',
-  tramadol:         'IV',
+  alprazolam: "IV",
+  diazepam: "IV",
+  clonazepam: "IV",
+  lorazepam: "IV",
+  zolpidem: "IV",
+  tramadol: "IV",
 
   // Schedule V
-  pregabalin:       'V',
-  gabapentin:       'V',
+  pregabalin: "V",
+  gabapentin: "V",
 };
 
 /**
@@ -183,7 +184,7 @@ export const CONTROLLED_SUBSTANCE_SCHEDULES: Record<string, ControlledSchedule> 
  */
 export function getControlledSchedule(drugName: string): ControlledSchedule {
   const key = drugName.toLowerCase().trim();
-  return CONTROLLED_SUBSTANCE_SCHEDULES[key] ?? 'unscheduled';
+  return CONTROLLED_SUBSTANCE_SCHEDULES[key] ?? "unscheduled";
 }
 
 /**
@@ -193,7 +194,7 @@ export function getControlledSchedule(drugName: string): ControlledSchedule {
  * @returns true if controlled, false if unscheduled.
  */
 export function isControlledSubstance(drugName: string): boolean {
-  return getControlledSchedule(drugName) !== 'unscheduled';
+  return getControlledSchedule(drugName) !== "unscheduled";
 }
 
 /**
@@ -205,5 +206,5 @@ export function isControlledSubstance(drugName: string): boolean {
  * @returns true if Schedule II, false otherwise.
  */
 export function requiresScheduleIIAuthorisation(drugName: string): boolean {
-  return getControlledSchedule(drugName) === 'II';
+  return getControlledSchedule(drugName) === "II";
 }
