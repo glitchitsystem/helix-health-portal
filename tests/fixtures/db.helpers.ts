@@ -166,6 +166,29 @@ export function seedMinimalData(): {
   };
 }
 
+// ─── Mock factory ─────────────────────────────────────────────────────────────
+
+export function buildMockDb(overrides?: {
+  runResult?: unknown;
+  getAllResult?: unknown[];
+  getResult?: unknown;
+}) {
+  const mockRun = jest
+    .fn()
+    .mockReturnValue(overrides?.runResult ?? { changes: 1 });
+  const mockAll = jest.fn().mockReturnValue(overrides?.getAllResult ?? []);
+  const mockGet = jest.fn().mockReturnValue(overrides?.getResult ?? undefined);
+
+  return {
+    prepare: jest.fn().mockReturnValue({
+      run: mockRun,
+      all: mockAll,
+      get: mockGet,
+    }),
+    _mocks: { run: mockRun, all: mockAll, get: mockGet },
+  };
+}
+
 // ─── Query helpers ────────────────────────────────────────────────────────────
 
 /**

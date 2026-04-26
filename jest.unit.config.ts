@@ -7,34 +7,34 @@
  * Run: npx jest --config jest.unit.config.ts
  */
 
-import type { Config } from 'jest';
+import type { Config } from "jest";
 
 const config: Config = {
-  displayName: 'unit',
-  preset:      'ts-jest',
+  displayName: "unit",
+  preset: "ts-jest",
 
-  testEnvironment: 'node',
+  testEnvironment: "node",
 
   // Match only unit test files
   testMatch: [
-    '<rootDir>/tests/unit/**/*.test.ts',
-    '<rootDir>/tests/unit/**/*.spec.ts',
+    "<rootDir>/tests/unit/**/*.test.ts",
+    "<rootDir>/tests/unit/**/*.spec.ts",
   ],
 
   // TypeScript transform via ts-jest
   transform: {
-    '^.+\\.tsx?$': [
-      'ts-jest',
+    "^.+\\.tsx?$": [
+      "ts-jest",
       {
-        tsconfig:   '<rootDir>/server/tsconfig.json',
-        diagnostics: { ignoreCodes: ['TS151001'] },
+        tsconfig: "<rootDir>/server/tsconfig.json",
+        diagnostics: { ignoreCodes: ["TS151001"] },
       },
     ],
   },
 
   // Module aliases (match tsconfig paths if any)
   moduleNameMapper: {
-    '^@/(.*)$': '<rootDir>/server/src/$1',
+    "^@/(.*)$": "<rootDir>/server/src/$1",
   },
 
   // Setup file (none needed for unit — no DB)
@@ -42,24 +42,24 @@ const config: Config = {
 
   // Coverage
   collectCoverageFrom: [
-    'server/src/services/**/*.ts',
-    '!server/src/services/**/*.d.ts',
-    '!**/__mocks__/**',
+    "server/src/services/**/*.ts",
+    "!server/src/services/**/*.d.ts",
+    "!**/__mocks__/**",
   ],
   coverageThreshold: {
     global: {
       branches: 70,
-      lines:    80,
+      lines: 80,
     },
   },
-  coverageReporters: ['lcov', 'text', 'html'],
-  coverageDirectory: '<rootDir>/coverage/unit',
+  coverageReporters: ["lcov", "text", "html"],
+  coverageDirectory: "<rootDir>/coverage/unit",
 
   // Timeout for individual tests (unit tests should be fast)
   testTimeout: 10_000,
 
   // Don't transform node_modules (most packages)
-  transformIgnorePatterns: ['/node_modules/(?!(@faker-js)/)'],
+  transformIgnorePatterns: ["/node_modules/(?!(@faker-js)/)"],
 };
 
 export default config;
