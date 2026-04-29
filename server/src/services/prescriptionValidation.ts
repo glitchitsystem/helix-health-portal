@@ -4,7 +4,6 @@
  * are written to the database.
  *
  * TESTABILITY: All functions are pure — no side effects, no DB access.
- * Students write unit tests against these functions in Section 10.
  */
 
 /**

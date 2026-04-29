@@ -10,7 +10,7 @@ import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
 
-const DB_PATH        = path.resolve(__dirname, '../../../db/helix.db');
+const DB_PATH        = process.env['DATABASE_PATH'] ?? path.resolve(__dirname, '../../../db/helix.db');
 const SCHEMA_PATH    = path.resolve(__dirname, '../../../db/schema.sql');
 const MIGRATIONS_DIR = path.resolve(__dirname, '../../../db/migrations');
 
