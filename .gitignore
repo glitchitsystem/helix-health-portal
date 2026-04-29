@@ -9,10 +9,13 @@ build/
 server/dist/
 client/dist/
 
-# Database (never commit the runtime DB)
+# Database files (never commit runtime DBs)
 db/helix.db
 db/helix.db-shm
 db/helix.db-wal
+db/helix.test.db
+db/helix.test.db-shm
+db/helix.test.db-wal
 
 # Environment files
 .env

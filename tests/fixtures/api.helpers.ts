@@ -16,13 +16,17 @@
  *   await playwrightLogin(page, 'provider');
  */
 
-import request, { type SuperAgentTest } from 'supertest';
+import request from 'supertest';
 import { TEST_CREDENTIALS, type TestCredentials } from './auth.fixtures';
 
 // ─── App import (lazy to avoid circular deps in unit tests) ───────────────────
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const getApp = () => require('../../server/src/app').default as import('express').Application;
+let _app: import('express').Application | null = null;
+const getApp = (): import('express').Application => {
+  if (!_app) _app = (require('../../server/src/app').createApp as () => import('express').Application)();
+  return _app;
+};
 
 // ─── Token cache (per test run — not persisted across Jest workers) ───────────
 
@@ -73,7 +77,7 @@ export function clearTokenCache(): void {
  */
 export async function authenticatedRequest(
   role: keyof typeof TEST_CREDENTIALS,
-): Promise<SuperAgentTest> {
+): Promise<ReturnType<typeof request.agent>> {
   const token = await getAuthToken(role);
   const app   = getApp();
   const agent = request.agent(app);
@@ -88,7 +92,7 @@ export async function authenticatedRequest(
  */
 export function withToken(
   app: ReturnType<typeof getApp>,
-  token: string,
+  _token: string,
 ): ReturnType<typeof request> {
   return request(app);
 }
