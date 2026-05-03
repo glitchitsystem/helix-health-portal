@@ -57,6 +57,7 @@ function resolvePrescription(id: number, next: NextFunction): Record<string, unk
 
 router.get(
   '/:patientId/prescriptions',
+  requireRole('patient', 'provider', 'nurse', 'admin'),
   auditAccess('prescriptions'),
   (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     try {

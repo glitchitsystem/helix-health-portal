@@ -63,6 +63,12 @@ const config: Config = {
   // Integration tests can be slower (real DB I/O)
   testTimeout: 30_000,
 
+  // Suppress console output so test results aren't buried in server logs
+  silent: true,
+
+  // Show individual test names in output
+  verbose: true,
+
   // Run suites serially to avoid DB conflicts (one suite at a time)
   maxWorkers: 1,
 
