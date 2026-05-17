@@ -11,7 +11,7 @@
 
 import { defineConfig, devices } from '@playwright/test';
 
-const BASE_URL = process.env['BASE_URL'] ?? 'http://localhost:3000';
+const BASE_URL = process.env['BASE_URL'] ?? 'http://localhost:5173';
 const IS_CI    = Boolean(process.env['CI']);
 
 export default defineConfig({
