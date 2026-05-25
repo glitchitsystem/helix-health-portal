@@ -1,0 +1,1219 @@
+{
+  "info": {
+    "_postman_id": "77d287c5-6704-41b8-8f3c-136df20dde35",
+    "name": "Helix API — Patients & Appointments",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "52530192"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "POST Login — provider",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {\r",
+                  "    pm.expect(pm.response).to.have.status(200);\r",
+                  "});\r",
+                  "\r",
+                  "pm.test(\"Response has accessToken string\", function () {\r",
+                  "    const json = pm.response.json();\r",
+                  "    pm.expect(json.data.accessToken).to.be.a('string');\r",
+                  "});\r",
+                  "\r",
+                  "pm.test(\"Response has refreshToken string\", function () {\r",
+                  "    const json = pm.response.json();\r",
+                  "    pm.expect(json.data.refreshToken).to.be.a('string');\r",
+                  "});\r",
+                  "\r",
+                  "pm.test(\"User role is provider\", function () {\r",
+                  "    const json = pm.response.json();\r",
+                  "    pm.expect(json).to.have.nested.property('data.user.role', 'provider');\r",
+                  "});\r",
+                  "\r",
+                  "// Store tokens for use in later requests\r",
+                  "const json = pm.response.json();\r",
+                  "pm.collectionVariables.set('accessToken', json.data.accessToken);\r",
+                  "pm.collectionVariables.set('refreshToken', json.data.refreshToken);\r",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"email\": \"provider@helixhealthportal.test\",\r\n  \"password\": \"TestPass123!\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST Login — patient1",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {\r",
+                  "    pm.expect(pm.response).to.have.status(200);\r",
+                  "});\r",
+                  "\r",
+                  "pm.test(\"Response has accessToken string\", function () {\r",
+                  "    const json = pm.response.json();\r",
+                  "    pm.expect(json.data.accessToken).to.be.a('string');\r",
+                  "});\r",
+                  "\r",
+                  "pm.test(\"Response has refreshToken string\", function () {\r",
+                  "    const json = pm.response.json();\r",
+                  "    pm.expect(json.data.refreshToken).to.be.a('string');\r",
+                  "});\r",
+                  "\r",
+                  "pm.test(\"User role is provider\", function () {\r",
+                  "    const json = pm.response.json();\r",
+                  "    pm.expect(json).to.have.nested.property('data.user.role', 'provider');\r",
+                  "});\r",
+                  "\r",
+                  "// Store tokens for use in later requests\r",
+                  "const json = pm.response.json();\r",
+                  "pm.collectionVariables.set('patientAccessToken', json.data.accessToken);\r",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"email\": \"patient1@helixhealthportal.test\",\r\n  \"password\": \"TestPass123!\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST Login — patient2",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {\r",
+                  "    pm.expect(pm.response).to.have.status(200);\r",
+                  "});\r",
+                  "\r",
+                  "pm.test(\"Response has accessToken string\", function () {\r",
+                  "    const json = pm.response.json();\r",
+                  "    pm.expect(json.data.accessToken).to.be.a('string');\r",
+                  "});\r",
+                  "\r",
+                  "pm.test(\"Response has refreshToken string\", function () {\r",
+                  "    const json = pm.response.json();\r",
+                  "    pm.expect(json.data.refreshToken).to.be.a('string');\r",
+                  "});\r",
+                  "\r",
+                  "pm.test(\"User role is provider\", function () {\r",
+                  "    const json = pm.response.json();\r",
+                  "    pm.expect(json).to.have.nested.property('data.user.role', 'provider');\r",
+                  "});\r",
+                  "\r",
+                  "// Store tokens for use in later requests\r",
+                  "const json = pm.response.json();\r",
+                  "pm.collectionVariables.set('patient2AccessToken', json.data.accessToken);\r",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"email\": \"patient2@helixhealthportal.test\",\r\n  \"password\": \"TestPass123!\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST Login wrong password — provider",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status is 401\", function () {\r",
+                  "    pm.expect(pm.response).to.have.status(401);\r",
+                  "});\r",
+                  "\r",
+                  "pm.test(\"Response has error property\", function () {\r",
+                  "    const json = pm.response.json();\r",
+                  "    pm.expect(json).to.have.property('error');\r",
+                  "});\r",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"email\": \"provider@helixhealthportal.test\",\r\n  \"password\": \"TestPass123\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST Login non-existent email — provider",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status is 401\", function () {\r",
+                  "    pm.expect(pm.response).to.have.status(401);\r",
+                  "});\r",
+                  "\r",
+                  "pm.test(\"Response has error property\", function () {\r",
+                  "    const json = pm.response.json();\r",
+                  "    pm.expect(json).to.have.property('error');\r",
+                  "});\r",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"email\": \"providerXYZ@helixhealthportal.test\",\r\n  \"password\": \"TestPass123!\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /auth/refresh — valid refresh token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {\r",
+                  "    pm.expect(pm.response).to.have.status(200);\r",
+                  "});\r",
+                  "\r",
+                  "pm.test(\"Response has accessToken\", function () {\r",
+                  "    const json = pm.response.json();\r",
+                  "    pm.expect(json).to.have.nested.property('data.accessToken');\r",
+                  "    pm.expect(json.data.accessToken).to.be.a('string');\r",
+                  "});\r",
+                  "\r",
+                  "// Store tokens for use in later requests\r",
+                  "const json = pm.response.json();\r",
+                  "pm.collectionVariables.set('accessToken', json.data.accessToken);\r",
+                  "pm.collectionVariables.set('refreshToken', json.data.refreshToken);"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"refreshToken\": \"{{refreshToken}}\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/refresh",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "refresh"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Patients",
+      "item": [
+        {
+          "name": "GET /patients — provider role",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status is 200\", () => {\r",
+                  "    pm.response.to.have.status(200);\r",
+                  "});\r",
+                  "\r",
+                  "pm.test(\"Response envelope is successful\", () => {\r",
+                  "    const json = pm.response.json();\r",
+                  "    pm.expect(json.success).to.be.true;\r",
+                  "});\r",
+                  "\r",
+                  "pm.test(\"data is a non-empty array\", () => {\r",
+                  "    const json = pm.response.json();\r",
+                  "    pm.expect(json.data).to.be.an(\"array\").with.length.above(0);\r",
+                  "});\r",
+                  "\r",
+                  "pm.test(\"First patient has required fields\", () => {\r",
+                  "    const patient = pm.response.json().data[0];\r",
+                  "    pm.expect(patient.id).to.be.a(\"number\");\r",
+                  "    pm.expect(patient.first_name).to.be.a(\"string\");\r",
+                  "    pm.expect(patient.last_name).to.be.a(\"string\");\r",
+                  "    pm.expect(patient.mrn).to.exist;\r",
+                  "});\r",
+                  "\r",
+                  "// Post-test: capture first patient's ID for downstream requests\r",
+                  "const firstPatient = pm.response.json().data[0];\r",
+                  "if (firstPatient && firstPatient.id) {\r",
+                  "    pm.collectionVariables.set(\"patientId\", firstPatient.id);\r",
+                  "}\r",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/patients",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "patients"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /patients/{{patientId}} — provider role",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status is 200\", () => {\r",
+                  "    pm.response.to.have.status(200);\r",
+                  "});\r",
+                  "\r",
+                  "pm.test(\"Response envelope is successful\", () => {\r",
+                  "    const json = pm.response.json();\r",
+                  "    pm.expect(json.success).to.be.true;\r",
+                  "});\r",
+                  "\r",
+                  "pm.test(\"Returned patient ID matches requested patientId\", () => {\r",
+                  "    const json = pm.response.json();\r",
+                  "    const expectedId = Number(pm.collectionVariables.get(\"patientId\"));\r",
+                  "    pm.expect(json.data.id).to.be.a(\"number\").and.to.equal(expectedId);\r",
+                  "});\r",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/patients/{{patientId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "patients",
+                "{{patientId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /patients/999999 — non-existent patient",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status is 404\", () => {\r",
+                  "    pm.response.to.have.status(404);\r",
+                  "});\r",
+                  "\r",
+                  "pm.test(\"Error envelope is returned\", () => {\r",
+                  "    const json = pm.response.json();\r",
+                  "    pm.expect(json.success).to.be.false;\r",
+                  "    pm.expect(json).to.have.property(\"error\");\r",
+                  "});\r",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/patients/999999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "patients",
+                "999999"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /patients — no Authorization header",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status is 401\", () => {\r",
+                  "    pm.response.to.have.status(401);\r",
+                  "});\r",
+                  "\r",
+                  "pm.test(\"Error envelope is returned\", () => {\r",
+                  "    const json = pm.response.json();\r",
+                  "    pm.expect(json.success).to.be.false;\r",
+                  "    pm.expect(json).to.have.property(\"error\");\r",
+                  "});\r",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/patients",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "patients"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /patients — patient role (forbidden)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status is 403\", () => {\r",
+                  "    pm.response.to.have.status(403);\r",
+                  "});\r",
+                  "\r",
+                  "pm.test(\"Error envelope is returned\", () => {\r",
+                  "    const json = pm.response.json();\r",
+                  "    pm.expect(json.success).to.be.false;\r",
+                  "    pm.expect(json).to.have.property(\"error\");\r",
+                  "});\r",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{patientAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/patients",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "patients"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Appointments",
+      "item": [
+        {
+          "name": "GET /appointments — provider role",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {\r",
+                  "    pm.response.to.have.status(200);\r",
+                  "});\r",
+                  "\r",
+                  "pm.test(\"Response envelope is success\", function () {\r",
+                  "    const res = pm.response.json();\r",
+                  "    pm.expect(res.success).to.be.true;\r",
+                  "});\r",
+                  "\r",
+                  "pm.test(\"data is an array\", function () {\r",
+                  "    const res = pm.response.json();\r",
+                  "    pm.expect(res.data).to.be.an(\"array\");\r",
+                  "});\r",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/appointments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "appointments"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /appointments — provider books for patient",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status is 201\", function () {\r",
+                  "    pm.response.to.have.status(201);\r",
+                  "});\r",
+                  "\r",
+                  "pm.test(\"Response envelope is success\", function () {\r",
+                  "    const res = pm.response.json();\r",
+                  "    pm.expect(res.success).to.be.true;\r",
+                  "});\r",
+                  "\r",
+                  "pm.test(\"data.id is a number\", function () {\r",
+                  "    const res = pm.response.json();\r",
+                  "    pm.expect(res.data.id).to.be.a(\"number\");\r",
+                  "});\r",
+                  "\r",
+                  "pm.test(\"data.status is 'scheduled'\", function () {\r",
+                  "    const res = pm.response.json();\r",
+                  "    pm.expect(res.data.status).to.eql(\"scheduled\");\r",
+                  "});\r",
+                  "\r",
+                  "pm.test(\"data.patient_id matches patientId variable\", function () {\r",
+                  "    const res = pm.response.json();\r",
+                  "    pm.expect(res.data.patient_id).to.eql(1);\r",
+                  "});\r",
+                  "\r",
+                  "// Save appointmentId for downstream requests\r",
+                  "const res = pm.response.json();\r",
+                  "pm.collectionVariables.set(\"appointmentId\", res.data.id);\r",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{patientAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"patient_id\": 1,\r\n  \"provider_id\": 1,\r\n  \"appointment_type_id\": 1,\r\n  \"scheduled_at\": \"2026-06-25T14:30:00.000Z\"\r\n}\r\n",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/appointments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "appointments"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /appointments/{{appointmentId}} — provider role",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {\r",
+                  "    pm.response.to.have.status(200);\r",
+                  "});\r",
+                  "\r",
+                  "pm.test(\"Response envelope is success\", function () {\r",
+                  "    const res = pm.response.json();\r",
+                  "    pm.expect(res.success).to.be.true;\r",
+                  "});\r",
+                  "\r",
+                  "pm.test(\"data.id matches appointmentId variable\", function () {\r",
+                  "    const res = pm.response.json();\r",
+                  "    const expectedId = Number(pm.collectionVariables.get(\"appointmentId\"));\r",
+                  "    pm.expect(res.data.id).to.eql(expectedId);\r",
+                  "});\r",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{patientAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/appointments/{{appointmentId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "appointments",
+                "{{appointmentId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH /appointments/{{appointmentId}} — provider confirms",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {\r",
+                  "    pm.response.to.have.status(200);\r",
+                  "});\r",
+                  "\r",
+                  "pm.test(\"Response envelope is success\", function () {\r",
+                  "    const res = pm.response.json();\r",
+                  "    pm.expect(res.success).to.be.true;\r",
+                  "});\r",
+                  "\r",
+                  "pm.test(\"data.status is 'confirmed'\", function () {\r",
+                  "    const res = pm.response.json();\r",
+                  "    pm.expect(res.data.status).to.eql(\"confirmed\");\r",
+                  "});\r",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{patientAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"status\": \"confirmed\"\r\n}\r\n",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/appointments/{{appointmentId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "appointments",
+                "{{appointmentId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET {{baseUrl}}/appointments?patient_id={{patientId}}",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {\r",
+                  "    pm.response.to.have.status(200);\r",
+                  "});\r",
+                  "\r",
+                  "pm.test(\"Response envelope is success\", function () {\r",
+                  "    const res = pm.response.json();\r",
+                  "    pm.expect(res.success).to.be.true;\r",
+                  "});\r",
+                  "\r",
+                  "pm.test(\"data is an array\", function () {\r",
+                  "    const res = pm.response.json();\r",
+                  "    pm.expect(res.data).to.be.an(\"array\");\r",
+                  "});\r",
+                  "\r",
+                  "pm.test(\"every item has patient_id matching patientId variable\", function () {\r",
+                  "    const res = pm.response.json();\r",
+                  "    const expectedPatientId = Number(pm.collectionVariables.get(\"patientId\"));\r",
+                  "    pm.expect(res.data.every(item => item.patient_id === expectedPatientId)).to.be.true;\r",
+                  "});\r",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{patientAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/appointments?patient_id=1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "appointments"
+              ],
+              "query": [
+                {
+                  "key": "patient_id",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /appointments/types — provider role",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status is 200\", function () {\r",
+                  "    pm.response.to.have.status(200);\r",
+                  "});\r",
+                  "\r",
+                  "pm.test(\"Response envelope is success\", function () {\r",
+                  "    const res = pm.response.json();\r",
+                  "    pm.expect(res.success).to.be.true;\r",
+                  "});\r",
+                  "\r",
+                  "pm.test(\"data is an array\", function () {\r",
+                  "    const res = pm.response.json();\r",
+                  "    pm.expect(res.data).to.be.an(\"array\");\r",
+                  "});\r",
+                  "\r",
+                  "pm.test(\"every item has id, name, and duration_minutes\", function () {\r",
+                  "    const res = pm.response.json();\r",
+                  "    pm.expect(res.data.every(item =>\r",
+                  "        typeof item.id === \"number\" &&\r",
+                  "        typeof item.name === \"string\" &&\r",
+                  "        typeof item.duration_minutes === \"number\"\r",
+                  "    )).to.be.true;\r",
+                  "});\r",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/appointments/types",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "appointments",
+                "types"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Negative & Permission Tests",
+      "item": [
+        {
+          "name": "GET /patients/{{patientId}} — patient2 accessing patient1's record (403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Auth tab: Bearer {{patient2AccessToken}}\r",
+                  "// patient2 is authenticated but requesting patient1's record — the API must reject it.\r",
+                  "\r",
+                  "pm.test('Status code is 403 Forbidden', function () {\r",
+                  "    pm.response.to.have.status(403);\r",
+                  "});\r",
+                  "\r",
+                  "pm.test('Response body has property error', function () {\r",
+                  "    const json = pm.response.json();\r",
+                  "    pm.expect(json).to.have.property('error');\r",
+                  "});\r",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{patientAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/patients/2",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "patients",
+                "2"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH /appointments/{{appointmentId}} — patient2 tries to change status (403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Auth tab: Bearer {{patientAccessToken}}\r",
+                  "\r",
+                  "pm.test('Status code is 403 Forbidden', function () {\r",
+                  "    pm.response.to.have.status(403);\r",
+                  "});\r",
+                  "\r",
+                  "pm.test('Response body has property error', function () {\r",
+                  "    const json = pm.response.json();\r",
+                  "    pm.expect(json).to.have.property('error');\r",
+                  "});\r",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{patient2AccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/appointments/{{appointmentId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "appointments",
+                "{{appointmentId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /patients/{{patientId}}/appointments — missing scheduledAt (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400 Bad Request', function () {\r",
+                  "    pm.response.to.have.status(400);\r",
+                  "});\r",
+                  "\r",
+                  "pm.test('Response body has property error', function () {\r",
+                  "    const json = pm.response.json();\r",
+                  "    pm.expect(json).to.have.property('error');\r",
+                  "});\r",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{patientAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"appointmentTypeId\": 1, \"providerId\": 1 }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/patients/1/appointments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "patients",
+                "1",
+                "appointments"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "refreshToken",
+      "value": ""
+    },
+    {
+      "key": "patientId",
+      "value": ""
+    },
+    {
+      "key": "patientAccessToken",
+      "value": ""
+    },
+    {
+      "key": "appointmentId",
+      "value": ""
+    },
+    {
+      "key": "patient2AccessToken",
+      "value": ""
+    }
+  ]
+}

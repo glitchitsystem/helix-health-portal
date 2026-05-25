@@ -1,0 +1,16 @@
+{
+  "id": "ea6668aa-0b54-466b-92b7-6e719de02945",
+  "name": "Helix Local",
+  "values": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:4000/api",
+      "type": "default",
+      "enabled": true
+    }
+  ],
+  "color": null,
+  "_postman_variable_scope": "environment",
+  "_postman_exported_at": "2026-05-25T14:35:40.133Z",
+  "_postman_exported_using": "Postman/12.11.5"
+}

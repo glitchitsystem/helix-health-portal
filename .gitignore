@@ -48,3 +48,5 @@ coverage/
 .nyc_output/
 playwright-report
 test-results
+
+postman/*.live.environment.json

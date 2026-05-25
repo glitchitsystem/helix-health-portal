@@ -1,0 +1,335 @@
+{
+  "info": {
+    "name": "Helix Health Portal — POST /patients/:patientId/prescriptions",
+    "description": "Postman test collection for the Create Prescription endpoint.\nBase URL: http://localhost:4000/api\n\nPre-requisites (set as collection variables or run the Pre-request Script):\n  - provider_token  : JWT for a provider/admin account\n  - patient_token   : JWT for a patient account (patient1)\n  - patient_id      : numeric patient ID that exists in the DB (e.g. 1)\n  - nonexistent_id  : a patient ID that does NOT exist (e.g. 99999)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url",       "value": "http://localhost:4000/api" },
+    { "key": "provider_token", "value": "" },
+    { "key": "patient_token",  "value": "" },
+    { "key": "patient_id",     "value": "1" },
+    { "key": "nonexistent_id", "value": "99999" }
+  ],
+  "item": [
+    {
+      "name": "Auth — Login as provider (get token)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Login as provider succeeds', function () {",
+              "    pm.response.to.have.status(200);",
+              "    const body = pm.response.json();",
+              "    pm.expect(body.success).to.be.true;",
+              "    pm.collectionVariables.set('provider_token', body.data.accessToken);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{base_url}}/auth/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"provider@helixhealthportal.test\",\n  \"password\": \"TestPass123!\"\n}"
+        }
+      }
+    },
+    {
+      "name": "Auth — Login as patient (get token)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Login as patient succeeds', function () {",
+              "    pm.response.to.have.status(200);",
+              "    const body = pm.response.json();",
+              "    pm.expect(body.success).to.be.true;",
+              "    pm.collectionVariables.set('patient_token', body.data.accessToken);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{base_url}}/auth/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"patient1@helixhealthportal.test\",\n  \"password\": \"TestPass123!\"\n}"
+        }
+      }
+    },
+    {
+      "name": "1 — 201 Successful prescription creation",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Response time is under 500ms', function () {",
+              "    pm.expect(pm.response.responseTime).to.be.below(500);",
+              "});",
+              "",
+              "pm.test('Status code is 201 Created', function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "",
+              "pm.test('Response envelope: success is true', function () {",
+              "    const body = pm.response.json();",
+              "    pm.expect(body.success).to.be.true;",
+              "});",
+              "",
+              "pm.test('Response data contains prescription fields', function () {",
+              "    const body = pm.response.json();",
+              "    pm.expect(body.data).to.be.an('object');",
+              "    pm.expect(body.data).to.have.property('id');",
+              "    pm.expect(body.data.drugName).to.equal('Amoxicillin');",
+              "    pm.expect(body.data.dosage).to.equal('500mg');",
+              "    pm.expect(body.data.status).to.equal('active');",
+              "    pm.expect(body.data.patientId).to.equal(Number(pm.collectionVariables.get('patient_id')));",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type",  "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{provider_token}}" }
+        ],
+        "url": "{{base_url}}/patients/{{patient_id}}/prescriptions",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"drug_name\": \"Amoxicillin\",\n  \"dosage\": \"500mg\",\n  \"frequency\": \"three times daily\",\n  \"route\": \"oral\",\n  \"quantity\": 21,\n  \"refills_remaining\": 0,\n  \"start_date\": \"2026-05-22\",\n  \"pharmacy_name\": \"TEST Pharmacy CVS #1234\",\n  \"pharmacy_phone\": \"555-000-0001\",\n  \"notes\": \"Take with food.\"\n}"
+        }
+      }
+    },
+    {
+      "name": "2 — 400 Missing required field: drug_name",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Response time is under 500ms', function () {",
+              "    pm.expect(pm.response.responseTime).to.be.below(500);",
+              "});",
+              "",
+              "pm.test('Status code is 400 Bad Request', function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "",
+              "pm.test('Response envelope: success is false', function () {",
+              "    const body = pm.response.json();",
+              "    pm.expect(body.success).to.be.false;",
+              "});",
+              "",
+              "pm.test('Error message is present', function () {",
+              "    const body = pm.response.json();",
+              "    pm.expect(body.error).to.be.a('string').and.not.empty;",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type",  "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{provider_token}}" }
+        ],
+        "url": "{{base_url}}/patients/{{patient_id}}/prescriptions",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"dosage\": \"500mg\",\n  \"frequency\": \"three times daily\",\n  \"start_date\": \"2026-05-22\"\n}"
+        }
+      }
+    },
+    {
+      "name": "3 — 401 No Authorization header",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Response time is under 500ms', function () {",
+              "    pm.expect(pm.response.responseTime).to.be.below(500);",
+              "});",
+              "",
+              "pm.test('Status code is 401 Unauthorized', function () {",
+              "    pm.response.to.have.status(401);",
+              "});",
+              "",
+              "pm.test('Response envelope: success is false', function () {",
+              "    const body = pm.response.json();",
+              "    pm.expect(body.success).to.be.false;",
+              "});",
+              "",
+              "pm.test('Error message is present', function () {",
+              "    const body = pm.response.json();",
+              "    pm.expect(body.error).to.be.a('string').and.not.empty;",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": "{{base_url}}/patients/{{patient_id}}/prescriptions",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"drug_name\": \"Amoxicillin\",\n  \"dosage\": \"500mg\",\n  \"frequency\": \"three times daily\",\n  \"start_date\": \"2026-05-22\"\n}"
+        }
+      }
+    },
+    {
+      "name": "4 — 403 Patient role cannot create prescriptions",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Response time is under 500ms', function () {",
+              "    pm.expect(pm.response.responseTime).to.be.below(500);",
+              "});",
+              "",
+              "pm.test('Status code is 403 Forbidden', function () {",
+              "    pm.response.to.have.status(403);",
+              "});",
+              "",
+              "pm.test('Response envelope: success is false', function () {",
+              "    const body = pm.response.json();",
+              "    pm.expect(body.success).to.be.false;",
+              "});",
+              "",
+              "pm.test('Error message is present', function () {",
+              "    const body = pm.response.json();",
+              "    pm.expect(body.error).to.be.a('string').and.not.empty;",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type",  "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{patient_token}}" }
+        ],
+        "url": "{{base_url}}/patients/{{patient_id}}/prescriptions",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"drug_name\": \"Amoxicillin\",\n  \"dosage\": \"500mg\",\n  \"frequency\": \"three times daily\",\n  \"start_date\": \"2026-05-22\"\n}"
+        }
+      }
+    },
+    {
+      "name": "5 — 404 Non-existent patient ID",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Response time is under 500ms', function () {",
+              "    pm.expect(pm.response.responseTime).to.be.below(500);",
+              "});",
+              "",
+              "pm.test('Status code is 404 Not Found', function () {",
+              "    pm.response.to.have.status(404);",
+              "});",
+              "",
+              "pm.test('Response envelope: success is false', function () {",
+              "    const body = pm.response.json();",
+              "    pm.expect(body.success).to.be.false;",
+              "});",
+              "",
+              "pm.test('Error message is present', function () {",
+              "    const body = pm.response.json();",
+              "    pm.expect(body.error).to.be.a('string').and.not.empty;",
+              "});"
+            ],
+            "type": "text/javascript"          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type",  "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{provider_token}}" }
+        ],
+        "url": "{{base_url}}/patients/{{nonexistent_id}}/prescriptions",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"drug_name\": \"Amoxicillin\",\n  \"dosage\": \"500mg\",\n  \"frequency\": \"three times daily\",\n  \"start_date\": \"2026-05-22\"\n}"
+        }
+      }
+    },
+    {
+      "name": "6 — 422 Drug interaction detected (Warfarin + existing Aspirin)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// NOTE: This test requires patient_id to have Aspirin as an active",
+              "// medication in the database (see prescriptions.fixtures.ts — KNOWN_INTERACTION_PAIRS).",
+              "// The API returns 422 when a severe interaction is detected at prescription creation.",
+              "",
+              "pm.test('Response time is under 500ms', function () {",
+              "    pm.expect(pm.response.responseTime).to.be.below(500);",
+              "});",
+              "",
+              "pm.test('Status code is 422 Unprocessable Entity', function () {",
+              "    pm.response.to.have.status(422);",
+              "});",
+              "",
+              "pm.test('Response envelope: success is false', function () {",
+              "    const body = pm.response.json();",
+              "    pm.expect(body.success).to.be.false;",
+              "});",
+              "",
+              "pm.test('Error message references drug interaction', function () {",
+              "    const body = pm.response.json();",
+              "    pm.expect(body.error).to.be.a('string').and.not.empty;",
+              "    // The error should mention the interaction or the drug involved",
+              "    pm.expect(body.error.toLowerCase()).to.satisfy(function (msg) {",
+              "        return msg.includes('interaction') || msg.includes('warfarin') || msg.includes('aspirin');",
+              "    }, 'Error should reference the drug interaction');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type",  "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{provider_token}}" }
+        ],
+        "url": "{{base_url}}/patients/{{patient_id}}/prescriptions",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"drug_name\": \"Warfarin\",\n  \"dosage\": \"5mg\",\n  \"frequency\": \"once daily\",\n  \"start_date\": \"2026-05-22\",\n  \"notes\": \"INTERACTION TEST: patient should already have Aspirin in active meds.\"\n}"
+        }
+      }
+    }
+  ]
+}
