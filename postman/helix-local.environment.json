@@ -1,0 +1,16 @@
+{
+  "id": "5fe91914-e140-4b12-a733-f939afe3bb25",
+  "name": "Helix Local",
+  "values": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:4000/api",
+      "enabled": true,
+      "type": "default"
+    },
+    { "key": "accessToken", "value": "", "enabled": true, "type": "default" },
+    { "key": "refreshToken", "value": "", "enabled": true, "type": "default" },
+    { "key": "testPatientId", "value": "", "enabled": true, "type": "default" },
+    { "key": "testProviderId", "value": "", "enabled": true, "type": "default" }
+  ]
+}

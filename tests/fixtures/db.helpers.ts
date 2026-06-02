@@ -11,6 +11,7 @@
 import path from 'path';
 import fs   from 'fs';
 import Database from 'better-sqlite3';
+import type { CompletePatientRecord } from './patients.fixtures';
 
 // ─── Paths ────────────────────────────────────────────────────────────────────
 
@@ -275,6 +276,127 @@ export function countRows(table: string, where?: string, params?: unknown[]): nu
   const sql = `SELECT COUNT(*) as n FROM "${table}"${where ? ` WHERE ${where}` : ''}`;
   const row = db.prepare(sql).get(...(params ?? [])) as { n: number };
   return row.n;
+}
+
+// ─── Complete patient scenario ────────────────────────────────────────────────
+
+/**
+ * Seeds a fully-populated patient scenario: user, role assignment, patient record,
+ * demographics, insurance plan, and appointment. Idempotent on email/MRN collisions.
+ */
+export function seedCompletePatientScenario(
+  record: CompletePatientRecord,
+  providerDbId: number,
+  appointmentTypeId: number,
+): {
+  userDbId: number;
+  patientDbId: number;
+  insuranceId: number;
+  appointmentId: number;
+} {
+  const db = getTestDb();
+  const HASH = '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TiGGaFS3QB1RwzP7nPxKhO7hLe9W';
+
+  // Step A — create user row
+  db.prepare(
+    `INSERT OR IGNORE INTO users (email, password_hash, email_verified, is_active)
+     VALUES (?, ?, 1, 1)`,
+  ).run(record.demographics.email, HASH);
+
+  // Step B — get user id
+  const userRow = db.prepare('SELECT id FROM users WHERE email = ?').get(record.demographics.email) as Record<string, unknown>;
+  const userDbId = userRow['id'] as number;
+
+  // Step C — assign patient role
+  const roleRow = db.prepare('SELECT id FROM roles WHERE name = ?').get('patient') as Record<string, unknown> | undefined;
+  if (roleRow) {
+    db.prepare('INSERT OR IGNORE INTO user_roles (user_id, role_id) VALUES (?, ?)').run(userDbId, roleRow['id'] as number);
+  }
+
+  // Step D — create patients row
+  db.prepare('INSERT OR IGNORE INTO patients (user_id, mrn) VALUES (?, ?)').run(userDbId, record.demographics.mrn);
+  const patientRow = db.prepare('SELECT id FROM patients WHERE user_id = ?').get(userDbId) as Record<string, unknown>;
+  const patientDbId = patientRow['id'] as number;
+
+  // Step E — create patient_demographics row
+  db.prepare(
+    `INSERT INTO patient_demographics (
+       patient_id, first_name, last_name, dob, gender,
+       phone, address_line1, city, state, zip
+     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+     ON CONFLICT(patient_id) DO NOTHING`,
+  ).run(
+    patientDbId,
+    record.demographics.firstName,
+    record.demographics.lastName,
+    record.demographics.dob,
+    record.demographics.gender,
+    record.demographics.phone,
+    record.demographics.addressLine1,
+    record.demographics.city,
+    record.demographics.state,
+    record.demographics.zip,
+  );
+
+  // Step F — create insurance_plans row
+  const insuranceResult = db.prepare(
+    `INSERT INTO insurance_plans (
+       patient_id, insurer_name, plan_name, member_id, group_number,
+       effective_date, expiration_date, is_primary,
+       copay_amount, deductible_amount, deductible_met
+     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  ).run(
+    patientDbId,
+    record.insurance.insurer_name,
+    record.insurance.plan_name,
+    record.insurance.member_id,
+    record.insurance.group_number,
+    record.insurance.effective_date,
+    record.insurance.expiration_date,
+    record.insurance.is_primary ? 1 : 0,
+    record.insurance.copay_amount,
+    record.insurance.deductible_amount,
+    record.insurance.deductible_met ? 1 : 0,
+  );
+  const insuranceId = Number(insuranceResult.lastInsertRowid);
+
+  // Step G — create appointments row
+  const appointmentResult = db.prepare(
+    `INSERT INTO appointments (
+       patient_id, provider_id, appointment_type_id,
+       scheduled_at, status, location, notes, duration_minutes
+     ) VALUES (?, ?, ?, ?, ?, ?, ?, 30)`,
+  ).run(
+    patientDbId,
+    providerDbId,
+    appointmentTypeId,
+    record.appointment.scheduledAt,
+    record.appointment.status,
+    record.appointment.location ?? null,
+    record.appointment.notes ?? null,
+  );
+  const appointmentId = Number(appointmentResult.lastInsertRowid);
+
+  return { userDbId, patientDbId, insuranceId, appointmentId };
+}
+
+/**
+ * Deletes all records created by seedCompletePatientScenario in FK-safe order.
+ */
+export function cleanupCompletePatientScenario(ids: {
+  userDbId: number;
+  patientDbId: number;
+  insuranceId: number;
+  appointmentId: number;
+}): void {
+  const db = getTestDb();
+  db.prepare('DELETE FROM appointment_reminders WHERE appointment_id = ?').run(ids.appointmentId);
+  db.prepare('DELETE FROM appointments           WHERE id = ?').run(ids.appointmentId);
+  db.prepare('DELETE FROM insurance_plans        WHERE id = ?').run(ids.insuranceId);
+  db.prepare('DELETE FROM patient_demographics   WHERE patient_id = ?').run(ids.patientDbId);
+  db.prepare('DELETE FROM patients               WHERE id = ?').run(ids.patientDbId);
+  db.prepare('DELETE FROM user_roles             WHERE user_id = ?').run(ids.userDbId);
+  db.prepare('DELETE FROM users                  WHERE id = ?').run(ids.userDbId);
 }
 
 // ─── Prescription + refill request factory ───────────────────────────────────

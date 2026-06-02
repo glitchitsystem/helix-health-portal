@@ -8,6 +8,8 @@
  */
 
 import { faker } from '@faker-js/faker';
+import { InsurancePlanPayload, buildInsurancePlan } from './insurance.fixtures';
+import { AppointmentTypeName, AppointmentStatus, futureDate } from './appointments.fixtures';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -58,7 +60,7 @@ export function buildPatient(
   return {
     firstName:    `TEST_${faker.person.firstName(sex)}`,
     lastName:     `TEST_${faker.person.lastName()}`,
-    email:        `test.${faker.internet.username().toLowerCase()}.${Date.now()}@helixhealthportal.test`,
+    email:        `test.${faker.internet.userName().toLowerCase()}.${Date.now()}@helixhealthportal.test`,
     dob:          faker.date.birthdate({ min: 18, max: 85, mode: 'age' }).toISOString().slice(0, 10),
     gender:       sex,
     phone:        `555-${faker.string.numeric(3)}-${faker.string.numeric(4)}`,
@@ -137,6 +139,48 @@ export function buildPatientWithConditions(
  */
 export function buildPatientList(count: number): PatientDemographics[] {
   return Array.from({ length: count }, () => buildPatient());
+}
+
+// ─── Known seed patients (for stable test references) ─────────────────────────
+
+// ─── CompletePatientRecord ────────────────────────────────────────────────────
+
+export interface CompletePatientRecord {
+  demographics: PatientDemographics;
+  insurance:    InsurancePlanPayload;
+  appointment: {
+    appointmentTypeName: AppointmentTypeName;
+    scheduledAt:         string;
+    status:              AppointmentStatus;
+    location?:           string;
+    notes?:              string;
+  };
+}
+
+export function buildCompletePatientRecord(
+  overrides?: {
+    demographics?: Partial<PatientDemographics>;
+    insurance?:    Partial<InsurancePlanPayload>;
+    appointment?: {
+      appointmentTypeName?: AppointmentTypeName;
+      scheduledAt?:         string;
+      status?:              AppointmentStatus;
+      location?:            string;
+      notes?:               string;
+    };
+  },
+): CompletePatientRecord {
+  return {
+    demographics: buildPatient(overrides?.demographics),
+    insurance:    buildInsurancePlan(overrides?.insurance),
+    appointment: {
+      appointmentTypeName: overrides?.appointment?.appointmentTypeName ?? 'Follow-up',
+      scheduledAt:         overrides?.appointment?.scheduledAt         ?? futureDate(7),
+      status:              overrides?.appointment?.status              ?? 'scheduled',
+      location:            overrides?.appointment?.location,
+      notes:               overrides?.appointment?.notes,
+    },
+  };
 }
 
 // ─── Known seed patients (for stable test references) ─────────────────────────

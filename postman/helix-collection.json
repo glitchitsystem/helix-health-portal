@@ -1,0 +1,49 @@
+{
+  "info": {
+    "_postman_id": "1dff1723-338f-4d85-8dd1-fed42367beed",
+    "name": "Auth",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "52530192"
+  },
+  "item": [
+    {
+      "name": "Login — patient1",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const res = pm.response.json();\r",
+              "\r",
+              "if (res.success && res.data?.accessToken) {\r",
+              "  pm.environment.set('accessToken', res.data.accessToken);\r",
+              "  pm.environment.set('refreshToken', res.data.refreshToken);\r",
+              "  console.log('Tokens stored. Patient role:', res.data.user.roles);\r",
+              "} else {\r",
+              "  console.error('Login failed:', JSON.stringify(res));\r",
+              "}"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"email\": \"patient1@helixhealthportal.test\",\r\n  \"password\": \"TestPass123!\"\r\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/login",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "login"]
+        }
+      },
+      "response": []
+    }
+  ]
+}
