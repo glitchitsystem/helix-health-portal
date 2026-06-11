@@ -2,9 +2,9 @@ name: Helix CI
 
 on:
   push:
-    branches: [main]
+    branches: [walkthrough, main]
   pull_request:
-    branches: [main]
+    branches: [walkthrough, main]
   workflow_dispatch:
 
 env:
