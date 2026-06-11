@@ -48,8 +48,8 @@ const config: Config = {
   ],
   coverageThreshold: {
     global: {
-      branches: 70,
-      lines: 80,
+      branches: 90,
+      lines: 85,
     },
   },
   coverageReporters: ["lcov", "text", "html"],
