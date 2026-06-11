@@ -60,6 +60,20 @@ const config: Config = {
   coverageReporters: ['lcov', 'text', 'html'],
   coverageDirectory: '<rootDir>/coverage/integration',
 
+  // Test result reporters
+  reporters: [
+    'default',
+    [
+      'jest-junit',
+      {
+        outputDirectory: 'test-results',
+        outputName: 'integration-results.xml',
+        classNameTemplate: '{classname}',
+        titleTemplate: '{title}',
+      },
+    ],
+  ],
+
   // Integration tests can be slower (real DB I/O)
   testTimeout: 30_000,
 

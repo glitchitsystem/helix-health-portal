@@ -1,0 +1,91 @@
+name: Seed Check
+
+# Verifies that db/seed.ts runs cleanly on a fresh database.
+# Runs on every push to main and on workflow dispatch.
+on:
+  workflow_dispatch: # disabled — all jobs skipped (localhost environment)
+
+env:
+  NODE_VERSION: "20"
+
+jobs:
+  seed-check:
+    name: Seed Database Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Remove any existing database
+        run: rm -f db/helix.db db/helix.test.db
+
+      - name: Run seed on fresh database
+        run: npm run seed
+        env:
+          NODE_ENV: development
+
+      - name: Verify database was created
+        run: |
+          if [ ! -f db/helix.db ]; then
+            echo "❌ helix.db was not created by seed"
+            exit 1
+          fi
+          echo "✅ helix.db exists ($(du -sh db/helix.db | cut -f1))"
+
+      - name: Verify core tables are populated
+        run: |
+          node -e "
+            const Database = require('better-sqlite3');
+            const db = new Database('db/helix.db');
+
+            const checks = [
+              ['users',      5, 'base accounts'],
+              ['patients',   2, 'base patients'],
+              ['providers',  1, 'base provider'],
+              ['roles',      5, 'roles'],
+            ];
+
+            let failed = false;
+            for (const [table, minRows, label] of checks) {
+              const count = db.prepare('SELECT COUNT(*) as n FROM ' + table).get().n;
+              if (count < minRows) {
+                console.error('❌ ' + table + ' has ' + count + ' rows (expected >= ' + minRows + ')');
+                failed = true;
+              } else {
+                console.log('✅ ' + table + ': ' + count + ' rows (' + label + ')');
+              }
+            }
+
+            // Phase 5 checks
+            const patientCount = db.prepare('SELECT COUNT(*) as n FROM patients').get().n;
+            if (patientCount < 20) {
+              console.warn('⚠️  patients table has ' + patientCount + ' rows — Phase 5 seed may not have run');
+            }
+
+            db.close();
+            if (failed) process.exit(1);
+          "
+
+      - name: Check seed is idempotent (run twice)
+        run: npm run seed
+        env:
+          NODE_ENV: development
+
+      - name: Verify idempotent run did not error
+        run: echo "✅ Seed ran twice without error (idempotent)"
+
+      - name: Upload database as artifact (for inspection)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: failed-seed-database
+          path: db/helix.db

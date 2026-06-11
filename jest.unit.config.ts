@@ -55,6 +55,20 @@ const config: Config = {
   coverageReporters: ["lcov", "text", "html"],
   coverageDirectory: "<rootDir>/coverage/unit",
 
+  // Test result reporters
+  reporters: [
+    "default",
+    [
+      "jest-junit",
+      {
+        outputDirectory: "test-results",
+        outputName: "unit-results.xml",
+        classNameTemplate: "{classname}",
+        titleTemplate: "{title}",
+      },
+    ],
+  ],
+
   // Timeout for individual tests (unit tests should be fast)
   testTimeout: 10_000,
 
