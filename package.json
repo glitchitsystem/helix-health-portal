@@ -24,6 +24,7 @@
     "@types/jest": "^30.0.0",
     "@types/supertest": "^7.2.0",
     "concurrently": "^8.2.2",
+    "jest-junit": "^17.0.0",
     "newman": "^6.2.2",
     "newman-reporter-htmlextra": "^1.23.1",
     "supertest": "^7.2.2",
