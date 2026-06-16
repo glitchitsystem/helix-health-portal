@@ -173,7 +173,7 @@ export function buildMinimalPrescription(): PrescriptionPayload {
 export function buildInvalidPrescription(
   missingField: 'drug_name' | 'dosage' | 'frequency' | 'start_date',
 ): Partial<PrescriptionPayload> {
-  const valid = buildMinimalPrescription() as Record<string, unknown>;
+  const valid = buildMinimalPrescription() as unknown as Record<string, unknown>;
   delete valid[missingField];
   return valid as Partial<PrescriptionPayload>;
 }
